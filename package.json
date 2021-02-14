@@ -10,7 +10,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "dotenv": "^8.2.0",
-    "node-binance-api": "^0.12.4"
+    "axios": "^0.21.1",
+    "ccxt": "^1.41.83",
+    "dotenv": "^8.2.0"
   }
 }
