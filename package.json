@@ -1,5 +1,5 @@
 {
-  "name": "binance-api",
+  "name": "binance-trader",
   "version": "0.1.0",
   "description": "Let's make some money!",
   "main": "index.js",
