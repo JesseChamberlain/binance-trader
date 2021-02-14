@@ -1,15 +1,15 @@
-require('dotenv').config;
+require('dotenv').config();
 const ccxt = require('ccxt');
 const axios = require('axios');
 
-const tick = async() => {
+const tick = async(config, binanceClient) => {
     const { asset, base, spread, allocation } = config;
     const market = `${asset}/${base}`;
 
     // Cancel open orders left from previous tick, if any
     const orders = await binanceClient.fetchOpenOrders(market);
     orders.forEach(async order =>{
-        await binanceClient.cancelOrder(order.id)
+        await binanceClient.cancelOrder(order.id, order.symbol);
     });
 
     // Fetch current market prices
