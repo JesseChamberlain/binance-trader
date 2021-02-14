@@ -1,6 +1,6 @@
 {
   "name": "binance-api",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Let's make some money!",
   "main": "index.js",
   "scripts": {
