@@ -22,6 +22,7 @@ function stringifyNumWithCommas(number) {
     return number.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
+// Object to be compounded
 const config = {
     "initialAmount": 1000,
     "returnRateAsDecimal": .01,
