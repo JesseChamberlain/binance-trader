@@ -13,8 +13,7 @@
     },
     "lint-staged": {
         "**/*.js, **/*.json": [
-            "eslint --fix",
-            "git add"
+            "eslint --fix"
         ]
     },
     "keywords": [],
