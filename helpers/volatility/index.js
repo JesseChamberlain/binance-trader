@@ -1,6 +1,6 @@
 const data1 = require('./dataStartUp1.json')
-const data2 = require('./dataStartUp2.json')
-const data3 = require('./dataStartUp3.json')
+// const data2 = require('./dataStartUp2.json')
+// const data3 = require('./dataStartUp3.json')
 
 /**
  * Returns number rounded to two decimal places.
@@ -22,9 +22,9 @@ function isCurrentTrendUp(prevPrice, current, prevTrend) {
     let isCurrentPriceHigher = current > prevPrice ? true : false
     let factorTrend = isCurrentPriceHigher || prevTrend ? true : false
 
-    if (factorTrend) {
-        previousTrend = false
-    }
+    // if (factorTrend) {
+    //     previousTrend = false
+    // }
 
     return factorTrend
 }
@@ -40,7 +40,7 @@ function runData(data) {
     let previousTrend = true // boolean to hold trending
 
     // loop through all price objects in data array
-    data.forEach((priceObj, index) => {
+    data.forEach((priceObj) => {
         let currentPrice = priceObj.price
         let valPrcntModifier = currentPrice / previousPrice
         let trendingUpward = isCurrentTrendUp(
