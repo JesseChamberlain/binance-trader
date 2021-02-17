@@ -12,5 +12,6 @@
         "ecmaVersion": 12
     },
     "rules": {
+        "node/no-process-env": 0
     }
 }
