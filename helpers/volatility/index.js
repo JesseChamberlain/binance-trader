@@ -35,7 +35,7 @@ function isCurrentTrendUp(prevPrice, current, prevTrend) {
  */
 function runData(data) {
     let startVal = 10.0 // representation of account $ total
-    let theoryVal = startVal // end $ value of account after running through data
+    let theoryVal ======= startVal // end $ value of account after running through data
     let previousPrice = 4.05 // param to iterate off of
     let previousTrend = true // boolean to hold trending
 

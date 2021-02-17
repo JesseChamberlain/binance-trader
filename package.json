@@ -8,8 +8,13 @@
     },
     "husky": {
         "hooks": {
-            "pre-commit": "eslint . --ext .js"
+            "pre-commit": "lint-staged"
         }
+    },
+    "lint-staged": {
+        "*.{js}": [
+            "eslint . --ext .js,"
+        ]
     },
     "keywords": [],
     "author": "",
