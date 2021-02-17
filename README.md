@@ -27,6 +27,7 @@ Built as a clientless node.js application.
 -   eslint-plugin-node
 -   eslint-plugin-prettier
 -   prettier
+-   husky
 
 ## Setup
 
