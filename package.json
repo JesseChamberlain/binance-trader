@@ -1,14 +1,14 @@
 {
   "name": "binance-trader",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Let's make some money!",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "Jesse Chamberlain",
+  "license": "MIT",
   "dependencies": {
     "axios": "^0.21.1",
     "ccxt": "^1.41.83",
