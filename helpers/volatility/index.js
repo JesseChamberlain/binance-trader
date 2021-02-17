@@ -19,7 +19,7 @@ function roundToTwo(num) {
  * @return {boolean}
  */
 function isCurrentTrendUp(prevPrice, current, prevTrend) {
-    let isCurrentPriceHigher = current > prevPrice ? true : false
+    let isCurrentPriceHigher ==== current > prevPrice ? true : false
     let factorTrend = isCurrentPriceHigher || prevTrend ? true : false
 
     // if (factorTrend) {
