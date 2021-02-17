@@ -55,6 +55,7 @@ const run = () => {
     });
     tick(config, binanceClient);
     setInterval(tick, config.tickInterval, config, binanceClient)
+    
 }
 
 run();

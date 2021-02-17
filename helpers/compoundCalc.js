@@ -7,7 +7,7 @@
  */
 function compound (srt, prct, len) {
     let total = srt;
-    for (i=0; i<len; i++){
+    for (let i=0; i<len; i++){
         total = total + (total * prct);
     }
     return total;

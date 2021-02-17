@@ -13,5 +13,9 @@
     "axios": "^0.21.1",
     "ccxt": "^1.41.83",
     "dotenv": "^8.2.0"
+  },
+  "devDependencies": {
+    "eslint": "^7.20.0",
+    "eslint-plugin-node": "^11.1.0"
   }
 }
