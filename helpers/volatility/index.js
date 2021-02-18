@@ -1,4 +1,4 @@
-const data1 = require('./dataStartUp1.json')
+const data1 = require('./dataStartUp1.json');
 // const data2 = require('./dataStartUp2.json')
 // const data3 = require('./dataStartUp3.json')
 
@@ -8,7 +8,7 @@ const data1 = require('./dataStartUp1.json')
  * @return {number} rounded number.
  */
 function roundToTwo(num) {
-    return Math.round(num * 100) / 100
+    return Math.round(num * 100) / 100;
 }
 
 /**
@@ -19,14 +19,14 @@ function roundToTwo(num) {
  * @return {boolean}
  */
 function isCurrentTrendUp(prevPrice, current, prevTrend) {
-    let isCurrentPriceHigher = current > prevPrice ? true : false
-    let factorTrend = isCurrentPriceHigher || prevTrend ? true : false
+    let isCurrentPriceHigher = current > prevPrice ? true : false;
+    let factorTrend = isCurrentPriceHigher || prevTrend ? true : false;
 
     // if (factorTrend) {
     //     previousTrend = false
     // }
 
-    return factorTrend
+    return factorTrend;
 }
 
 /**
@@ -34,30 +34,30 @@ function isCurrentTrendUp(prevPrice, current, prevTrend) {
  * @param {Array} data - JSON array of price objects.
  */
 function runData(data) {
-    let startVal = 10.0 // representation of account $ total
-    let theoryVal = startVal // end $ value of account after running through data
-    let previousPrice = 4.05 // param to iterate off of
-    let previousTrend = true // boolean to hold trending
+    let startVal = 10.0; // representation of account $ total
+    let theoryVal = startVal; // end $ value of account after running through data
+    let previousPrice = 4.05; // param to iterate off of
+    let previousTrend = true; // boolean to hold trending
 
     // loop through all price objects in data array
     data.forEach((priceObj) => {
-        let currentPrice = priceObj.price
-        let valPrcntModifier = currentPrice / previousPrice
+        let currentPrice = priceObj.price;
+        let valPrcntModifier = currentPrice / previousPrice;
         let trendingUpward = isCurrentTrendUp(
             previousPrice,
             currentPrice,
             previousTrend
-        )
+        );
 
         // only add to theory value if the price is trending upward
         if (trendingUpward) {
-            theoryVal = theoryVal * valPrcntModifier * 0.9925
+            theoryVal = theoryVal * valPrcntModifier * 0.9925;
         }
 
-        console.log(roundToTwo(theoryVal), currentPrice, trendingUpward)
-        previousPrice = currentPrice
-    })
+        console.log(roundToTwo(theoryVal), currentPrice, trendingUpward);
+        previousPrice = currentPrice;
+    });
 }
 
 // Initialize runner
-runData(data1)
+runData(data1);

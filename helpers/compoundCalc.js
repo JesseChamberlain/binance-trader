@@ -6,11 +6,11 @@
  * @return {number} compounded principal.
  */
 function compound(srt, prct, len) {
-    let total = srt
+    let total = srt;
     for (let i = 0; i < len; i++) {
-        total = total + total * prct
+        total = total + total * prct;
     }
-    return total
+    return total;
 }
 
 /**
@@ -19,7 +19,7 @@ function compound(srt, prct, len) {
  * @return {string} number as string with 2pt decimal and commas.
  */
 function stringifyNumWithCommas(number) {
-    return number.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+    return number.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
 // Object to be compounded
@@ -27,14 +27,14 @@ const config = {
     initialAmount: 1000,
     returnRateAsDecimal: 0.01,
     compoundedPeriods: 365,
-}
+};
 
 // Pass the config to the compound function and set to a var
 const compounded = compound(
     config.initialAmount,
     config.returnRateAsDecimal,
     config.compoundedPeriods
-)
+);
 
 // print it out
-console.log(`total $${stringifyNumWithCommas(compounded)}`)
+console.log(`total $${stringifyNumWithCommas(compounded)}`);
