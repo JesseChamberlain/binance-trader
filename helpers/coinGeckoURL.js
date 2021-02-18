@@ -5,8 +5,8 @@
  * @return {string} complete url.
  */
 const createCoinGeckoURL = (id, currency) => {
-    const url = `https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=${currency}`
-    return url
-}
+    const url = `https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=${currency}`;
+    return url;
+};
 
-exports.createCoinGeckoURL = createCoinGeckoURL
+exports.createCoinGeckoURL = createCoinGeckoURL;
