@@ -1,13 +1,17 @@
 const axios = require('axios');
 const { createCoinGeckoURL } = require('./helpers/coinGeckoURL');
+// const fs = require('fs');
 
 const tick = async (config) => {
     const { assetID, currency } = config;
     const assetURL = createCoinGeckoURL(assetID, currency);
 
-    axios.get(assetURL).then((response) => {
-        console.log(response.data);
+    const resData = await axios.get(assetURL).then((response) => {
+        return response.data;
     });
+
+    console.log(resData);
+    // fs.writeFile('./dataCollection.json', responseData);
 };
 
 const run = () => {
