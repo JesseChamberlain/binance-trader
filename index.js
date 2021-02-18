@@ -1,6 +1,6 @@
 const axios = require('axios');
 const { createCoinGeckoURL } = require('./helpers/coinGeckoURL');
-// const fs = require('fs');
+const fs = require('fs');
 
 const tick = async (config) => {
     const { assetID, currency } = config;
@@ -11,7 +11,33 @@ const tick = async (config) => {
     });
 
     console.log(resData);
-    // fs.writeFile('./dataCollection.json', responseData);
+
+    fs.readFile(
+        './dataCollection.json',
+        'utf8',
+        function readFileCallback(err, data) {
+            if (err) {
+                console.log(err);
+            } else {
+                let obj = JSON.parse(data); //now it an object
+                console.log(obj);
+                obj.push(resData); //add some data
+                let jsonData = JSON.stringify(obj); //convert it back to json
+                fs.writeFile(
+                    './dataCollection.json',
+                    jsonData,
+                    'utf8',
+                    (err) => {
+                        if (err) {
+                            console.log('Error writing file', err);
+                        } else {
+                            console.log('Successfully wrote file');
+                        }
+                    }
+                ); // write it back
+            }
+        }
+    );
 };
 
 const run = () => {
