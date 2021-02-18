@@ -1,10 +1,23 @@
 require('dotenv').config();
 const ccxt = require('ccxt');
 const axios = require('axios');
+const { createCoinGeckoURL } = require('./helpers/coinGeckoURL');
 
 const tick = async (config, binanceClient) => {
-    const { asset, base, spread, allocation } = config;
+    const {
+        asset,
+        assetID,
+        base,
+        baseID,
+        currency,
+        spread,
+        allocation,
+    } = config;
     const market = `${asset}/${base}`;
+
+    // Create API urls for price lookup
+    const assetURL = createCoinGeckoURL(assetID, currency);
+    const baseURL = createCoinGeckoURL(baseID, currency);
 
     // Cancel open orders left from previous tick, if any
     const orders = await binanceClient.fetchOpenOrders(market);
@@ -14,12 +27,8 @@ const tick = async (config, binanceClient) => {
 
     // Fetch current market prices
     const results = await Promise.all([
-        axios.get(
-            'https://api.coingecko.com/api/v3/simple/price?ids=litecoin&vs_currencies=usd'
-        ),
-        axios.get(
-            'https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=usd'
-        ),
+        axios.get(assetURL),
+        axios.get(baseURL),
     ]);
     const marketPrice =
         results[0].data.litecoin.usd / results[1].data.tether.usd;
@@ -48,7 +57,10 @@ const tick = async (config, binanceClient) => {
 const run = () => {
     const config = {
         asset: 'LTC', // LiteCoin
+        assetID: 'litecoin', // LiteCoin ID
         base: 'USDT', // Tether USD coin
+        baseID: 'tether', // Tether ID
+        currency: 'usd', // Currency for comparison
         allocation: 0.1, // Percentage of available funds
         spread: 0.2, // Percentage above & below preices for sell & buy orders
         tickInterval: 2000, // Duration between each tick, milliseconds
