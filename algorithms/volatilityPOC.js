@@ -1,7 +1,7 @@
-const data1Trim = require('./data/2021_17_02/dataTrimmed.json');
-const data2Trim = require('./data/2021_18_02/dataTrimmed.json');
-const data3Raw = require('./data/2021_19_02/dataRaw.json');
-const data3Trim = require('./data/2021_19_02/dataTrimmed.json');
+const data1Trim = require('../data/2021_17_02/dataTrimmed.json');
+const data2Trim = require('../data/2021_18_02/dataTrimmed.json');
+const data3Raw = require('../data/2021_19_02/dataRaw.json');
+const data3Trim = require('../data/2021_19_02/dataTrimmed.json');
 
 /**
  * Returns number rounded to two decimal places.
@@ -64,17 +64,17 @@ function runData(startAccountValue, startPrice, data) {
     });
 
     console.log(`
-        Starting Value: $${startAccountValue} 
+        Start Value: $${startAccountValue} 
         Theory Value: $${roundToTwo(theoryVal)} 
 
-        Starting Price: $${startPrice} 
-        Current Price: $${previousPrice} 
+        Start Price: $${startPrice} 
+        End Price: $${previousPrice} 
         -----------------------------------
     `);
 }
 
 // Initialize runners
 runData(100, 231.4, data1Trim); // ends down
-runData(100, 226.2, data2Trim); // ends up
+runData(102.73, 226.2, data2Trim); // ends up
 runData(100, 0.054948, data3Raw); // ends up
 runData(100, 0.054948, data3Trim); // ends up
