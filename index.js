@@ -1,54 +1,65 @@
-const axios = require('axios');
-const { createCoinGeckoURL } = require('./helpers/coinGeckoURL');
-const fs = require('fs');
+const data1 = require('./helpers/volatility/dataStartUp1.json');
+const data2 = require('./data/2021_17_02/dataTrimmed.json');
+const data3 = require('./data/2021_18_02/dataTrimmed.json');
 
-const tick = async (config) => {
-    const { assetID, currency } = config;
-    const assetURL = createCoinGeckoURL(assetID, currency);
+/**
+ * Returns number rounded to two decimal places.
+ * @param {number} num - float number to be rounded.
+ * @return {number} rounded number.
+ */
+function roundToTwo(num) {
+    return Math.round(num * 100) / 100;
+}
 
-    const resData = await axios.get(assetURL).then((response) => {
-        return response.data;
-    });
+/**
+ * Checks if the price is higher than previous
+ * @param {number} prevPrice - previous price.
+ * @param {number} current - current price.
+ * @param {boolean} prevTrend - boolean for previous trend.
+ * @return {boolean}
+ */
+function isCurrentTrendUp(prevPrice, current, prevTrend) {
+    let isCurrentPriceHigher = current > prevPrice ? true : false;
+    let factorTrend = isCurrentPriceHigher || prevTrend ? true : false;
 
-    console.log(resData);
+    // if (factorTrend) {
+    //     previousTrend = false
+    // }
 
-    fs.readFile(
-        './dataCollection.json',
-        'utf8',
-        function readFileCallback(err, data) {
-            if (err) {
-                console.log(err);
-            } else {
-                let obj = JSON.parse(data); //now it an object
-                console.log(obj);
-                obj.push(resData); //add some data
-                let jsonData = JSON.stringify(obj); //convert it back to json
-                fs.writeFile(
-                    './dataCollection.json',
-                    jsonData,
-                    'utf8',
-                    (err) => {
-                        if (err) {
-                            console.log('Error writing file', err);
-                        } else {
-                            console.log('Successfully wrote file');
-                        }
-                    }
-                ); // write it back
-            }
+    return factorTrend;
+}
+
+/**
+ * Runs data through logic and logs to console
+ * @param {Array} data - JSON array of price objects.
+ */
+function runData(data) {
+    let startVal = 10.0; // representation of account $ total
+    let theoryVal = startVal; // end $ value of account after running through data
+    let previousPrice = 4.05; // param to iterate off of
+    let previousTrend = true; // boolean to hold trending
+
+    // loop through all price objects in data array
+    data.forEach((priceObj) => {
+        let currentPrice = priceObj.price;
+        let valPrcntModifier = currentPrice / previousPrice;
+        let trendingUpward = isCurrentTrendUp(
+            previousPrice,
+            currentPrice,
+            previousTrend
+        );
+
+        // only add to theory value if the price is trending upward
+        if (trendingUpward) {
+            theoryVal = theoryVal * valPrcntModifier * 0.9925;
         }
-    );
-};
 
-const run = () => {
-    const config = {
-        assetID: 'litecoin', // LiteCoin ID
-        currency: 'usd', // Currency for comparison
-        tickInterval: 60000, // Duration between each tick, milliseconds
-    };
+        console.log(roundToTwo(theoryVal), currentPrice, trendingUpward);
+        previousPrice = currentPrice;
+    });
+}
 
-    tick(config);
-    setInterval(tick, config.tickInterval, config);
-};
-
-run();
+// Initialize runners
+runData(data1);
+runData(data2);
+runData(data3);
