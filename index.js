@@ -1,6 +1,6 @@
 const data1 = require('./helpers/volatility/dataStartUp1.json');
-const data2 = require('./data/2021_17_02/dataTrimmed.json');
-const data3 = require('./data/2021_18_02/dataTrimmed.json');
+const data2Trim = require('./data/2021_17_02/dataTrimmed.json');
+const data3Trim = require('./data/2021_18_02/dataTrimmed.json');
 
 /**
  * Returns number rounded to two decimal places.
@@ -12,54 +12,59 @@ function roundToTwo(num) {
 }
 
 /**
- * Checks if the price is higher than previous
- * @param {number} prevPrice - previous price.
- * @param {number} current - current price.
- * @param {boolean} prevTrend - boolean for previous trend.
- * @return {boolean}
- */
-function isCurrentTrendUp(prevPrice, current, prevTrend) {
-    let isCurrentPriceHigher = current > prevPrice ? true : false;
-    let factorTrend = isCurrentPriceHigher || prevTrend ? true : false;
-
-    // if (factorTrend) {
-    //     previousTrend = false
-    // }
-
-    return factorTrend;
-}
-
-/**
  * Runs data through logic and logs to console
  * @param {Array} data - JSON array of price objects.
+ * @param {Array} startAccountValue - Initial account value.
+ * @param {Array} startPrice - Initial price to work from.
  */
-function runData(data) {
-    let startVal = 10.0; // representation of account $ total
-    let theoryVal = startVal; // end $ value of account after running through data
-    let previousPrice = 4.05; // param to iterate off of
-    let previousTrend = true; // boolean to hold trending
+function runData(startAccountValue, startPrice, data) {
+    let theoryVal = startAccountValue; // end $ value of account after running through data
+    let previousPrice = startPrice; // param to iterate off of
+    let previousTrendUp = true; // boolean for previous trending
+    let isCurrentTrendUp = true; // boolean for current trending
+    let binanceFee = 0.99925;
+
+    console.log(`
+        Starting new Data set
+        ****************************
+    `);
 
     // loop through all price objects in data array
     data.forEach((priceObj) => {
         let currentPrice = priceObj.price;
         let valPrcntModifier = currentPrice / previousPrice;
-        let trendingUpward = isCurrentTrendUp(
-            previousPrice,
-            currentPrice,
-            previousTrend
-        );
+        isCurrentTrendUp = currentPrice > previousPrice ? true : false;
 
         // only add to theory value if the price is trending upward
-        if (trendingUpward) {
-            theoryVal = theoryVal * valPrcntModifier * 0.9925;
+        if (isCurrentTrendUp && previousTrendUp) {
+            theoryVal = theoryVal * valPrcntModifier;
+        } else if (!isCurrentTrendUp && previousTrendUp) {
+            theoryVal = theoryVal * valPrcntModifier * binanceFee;
+            previousTrendUp = false;
+        } else if (isCurrentTrendUp && !previousTrendUp) {
+            previousTrendUp = true;
         }
 
-        console.log(roundToTwo(theoryVal), currentPrice, trendingUpward);
+        // console.log(`
+        //     Theory price: $${roundToTwo(theoryVal)}
+        //     Current Price: $${currentPrice}
+        //     Is this trending upwards: ${isCurrentTrendUp}
+        //     -----------------------------------
+        // `);
         previousPrice = currentPrice;
     });
+
+    console.log(`
+        Starting Value: $${startAccountValue} 
+        Theory Value: $${roundToTwo(theoryVal)} 
+
+        Starting Price: $${startPrice} 
+        Current Price: $${previousPrice} 
+        -----------------------------------
+    `);
 }
 
 // Initialize runners
-runData(data1);
-runData(data2);
-runData(data3);
+runData(100, 4.09, data1); // mock
+runData(100, 231.4, data2Trim); // ends down
+runData(100, 226.2, data3Trim); // ends up
