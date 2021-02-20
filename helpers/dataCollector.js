@@ -1,5 +1,5 @@
 const axios = require('axios');
-const { createCoinGeckoURL } = require('./helpers/coinGeckoURL');
+const { createCoinGeckoURL } = require('./coinGeckoURL');
 const fs = require('fs');
 
 const tick = async (config) => {

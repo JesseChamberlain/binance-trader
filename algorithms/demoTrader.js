@@ -1,7 +1,7 @@
 require('dotenv').config();
 const ccxt = require('ccxt');
 const axios = require('axios');
-const { createCoinGeckoURL } = require('./helpers/coinGeckoURL');
+const { createCoinGeckoURL } = require('../helpers/coinGeckoURL');
 
 const tick = async (config, binanceClient) => {
     const {
