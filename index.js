@@ -1,54 +1,75 @@
-const axios = require('axios');
-const { createCoinGeckoURL } = require('./helpers/coinGeckoURL');
-const fs = require('fs');
+// const data1 = require('./helpers/volatility/dataStartUp1.json');
+// const data2Trim = require('./data/2021_17_02/dataTrimmed.json');
+// const data3Trim = require('./data/2021_18_02/dataTrimmed.json');
+const data4Raw = require('./data/2021_19_02/dataRaw.json');
+const data4Trim = require('./data/2021_19_02/dataTrimmed.json');
 
-const tick = async (config) => {
-    const { assetID, currency } = config;
-    const assetURL = createCoinGeckoURL(assetID, currency);
+/**
+ * Returns number rounded to two decimal places.
+ * @param {number} num - float number to be rounded.
+ * @return {number} rounded number.
+ */
+function roundToTwo(num) {
+    return Math.round(num * 100) / 100;
+}
 
-    const resData = await axios.get(assetURL).then((response) => {
-        return response.data;
+/**
+ * Runs data through logic and logs to console
+ * @param {Array} data - JSON array of price objects.
+ * @param {Array} startAccountValue - Initial account value.
+ * @param {Array} startPrice - Initial price to work from.
+ */
+function runData(startAccountValue, startPrice, data) {
+    let theoryVal = startAccountValue; // end $ value of account after running through data
+    let previousPrice = startPrice; // param to iterate off of
+    let previousTrendUp = true; // boolean for previous trending
+    let isCurrentTrendUp = true; // boolean for current trending
+    let binanceFee = 0.99925;
+
+    console.log(`
+        Starting new Data set
+        ****************************
+    `);
+
+    // loop through all price objects in data array
+    data.forEach((priceObj) => {
+        let currentPrice = priceObj.price;
+        let valPrcntModifier = currentPrice / previousPrice;
+        isCurrentTrendUp = currentPrice >= previousPrice ? true : false;
+
+        // only add to theory value if the price is trending upward
+        // TODO: there is a problem when the price comes back equal
+        if (isCurrentTrendUp && previousTrendUp) {
+            theoryVal = theoryVal * valPrcntModifier;
+        } else if (!isCurrentTrendUp && previousTrendUp) {
+            theoryVal = theoryVal * valPrcntModifier * binanceFee;
+            previousTrendUp = false;
+        } else if (isCurrentTrendUp && !previousTrendUp) {
+            previousTrendUp = true;
+        }
+
+        // console.log(`
+        //     Theory price: $${roundToTwo(theoryVal)}
+        //     Current Price: $${currentPrice}
+        //     Is this trending upwards: ${isCurrentTrendUp}
+        //     -----------------------------------
+        // `);
+        previousPrice = currentPrice;
     });
 
-    console.log(resData);
+    console.log(`
+        Starting Value: $${startAccountValue} 
+        Theory Value: $${roundToTwo(theoryVal)} 
 
-    fs.readFile(
-        './dataCollection.json',
-        'utf8',
-        function readFileCallback(err, data) {
-            if (err) {
-                console.log(err);
-            } else {
-                let obj = JSON.parse(data); //now it an object
-                console.log(obj);
-                obj.push(resData); //add some data
-                let jsonData = JSON.stringify(obj); //convert it back to json
-                fs.writeFile(
-                    './dataCollection.json',
-                    jsonData,
-                    'utf8',
-                    (err) => {
-                        if (err) {
-                            console.log('Error writing file', err);
-                        } else {
-                            console.log('Successfully wrote file');
-                        }
-                    }
-                ); // write it back
-            }
-        }
-    );
-};
+        Starting Price: $${startPrice} 
+        Current Price: $${previousPrice} 
+        -----------------------------------
+    `);
+}
 
-const run = () => {
-    const config = {
-        assetID: 'litecoin', // LiteCoin ID
-        currency: 'usd', // Currency for comparison
-        tickInterval: 60000, // Duration between each tick, milliseconds
-    };
-
-    tick(config);
-    setInterval(tick, config.tickInterval, config);
-};
-
-run();
+// Initialize runners
+// runData(100, 4.09, data1); // mock
+// runData(100, 231.4, data2Trim); // ends down
+// runData(100, 226.2, data3Trim); // ends up
+runData(100, 0.054948, data4Raw); // ends up
+runData(100, 0.054948, data4Trim); // ends up
