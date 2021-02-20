@@ -46,9 +46,9 @@ const tick = async (config) => {
 
 const run = () => {
     const config = {
-        assetID: 'litecoin', // LiteCoin ID
+        assetID: 'dogecoin', // LiteCoin ID
         currency: 'usd', // Currency for comparison
-        tickInterval: 6000, // Duration between each tick, milliseconds
+        tickInterval: 30000, // Duration between each tick, milliseconds
     };
 
     tick(config);
