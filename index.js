@@ -74,7 +74,7 @@ function factorVolatility(account, coinData) {
         // primary logic
         if (coinData.currentTrendUp && coinData.previousTrendUp) {
             // multiply theoryVal by modifier to mimic held value
-            account.theoryValue = account.theoryVal * valPrcntModifier;
+            account.theoryValue = account.theoryValue * valPrcntModifier;
         } else if (!coinData.currentTrendUp && coinData.previousTrendUp) {
             // multiple by modifier and binance fee to mimic market sell
             account.theoryValue =
