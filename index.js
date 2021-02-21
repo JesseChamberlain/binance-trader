@@ -21,15 +21,6 @@ class Account {
     }
 }
 
-/**
- * Returns number rounded to two decimal places.
- * @param {number} num - float number to be rounded.
- * @return {number} rounded number.
- */
-function roundToTwo(num) {
-    return Math.round(num * 100) / 100;
-}
-
 // Opens /data/collector.json (array json) and adds the response data to the array.
 function dataCollector(resData) {
     fs.readFile(
@@ -96,13 +87,8 @@ function factorVolatility(account, coinData) {
         // set the previous to current at end of each priceObj loop
         coinData.previousPrice = coinData.currentPrice;
     }
-
-    console.log(`
-        TheoryVal: $${roundToTwo(account.theoryValue)} 
-        CurPrice: $${coinData.currentPrice} 
-        PreviousPrice: $${coinData.previousPrice} 
-        Trending?: ${coinData.currentTrendUp}
-    `);
+    console.log(account);
+    console.log(coinData);
 }
 
 // Initialize coinData
