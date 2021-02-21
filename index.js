@@ -24,7 +24,10 @@ class Account {
 }
 
 // Opens /data/collector.json (array json) and adds the response data to the array.
-function dataCollector(resData) {
+function dataCollector(account, testCoinData) {
+    let ping = { time: 'to be built', account, testCoinData };
+    console.log(ping);
+
     fs.readFile(
         './data/collector.json',
         'utf8',
@@ -33,7 +36,7 @@ function dataCollector(resData) {
                 console.log(err);
             } else {
                 let collectorArray = JSON.parse(data); // renders file to object
-                collectorArray.push(resData); // add the response data
+                collectorArray.push(ping); // add the response data
                 // console.log(collectorArray); // log to make sure it's working
                 let jsonData = JSON.stringify(collectorArray); //convert it back to json
 
@@ -87,8 +90,6 @@ function factorVolatility(account, coinData) {
             coinData.previousTrendUp = true;
         }
     }
-    console.log(account);
-    console.log(coinData);
 
     // set the previous to current at end of each priceObj loop
     coinData.previousPrice = coinData.currentPrice;
@@ -97,30 +98,30 @@ function factorVolatility(account, coinData) {
 // Initialize coinData
 const initialize = async (assetURL, testCoinData) => {
     // request price from API
-    const resData = await axios.get(assetURL).then((response) => {
+    const responseData = await axios.get(assetURL).then((response) => {
         return response.data;
     });
 
     // initialize previous price with live price
     testCoinData.previousPrice =
-        resData[testCoinData.coinID][testCoinData.currency];
+        responseData[testCoinData.coinID][testCoinData.currency];
 };
 
 // Interval function
 const tick = async (assetURL, testCoinData, account) => {
     // request price from API
-    const resData = await axios.get(assetURL).then((response) => {
+    const responseData = await axios.get(assetURL).then((response) => {
         return response.data;
     });
 
     testCoinData.currentPrice =
-        resData[testCoinData.coinID][testCoinData.currency];
+        responseData[testCoinData.coinID][testCoinData.currency];
 
     // Initialize runners
     factorVolatility(account, testCoinData);
 
     // Opens /data/collector.json (array json) and adds the data response to the array.
-    dataCollector(resData);
+    dataCollector(account, testCoinData);
 };
 
 // Primary runner
