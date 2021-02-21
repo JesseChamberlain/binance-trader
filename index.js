@@ -4,7 +4,9 @@ const fs = require('fs');
 
 // CoinData object for storing and mutating current stage of coin price
 class CoinData {
-    constructor() {
+    constructor(coinID, currency) {
+        this.coinID = coinID;
+        this.currency = currency;
         this.currentPrice = 0;
         this.previousPrice = 0;
         this.currentTrendUp = true;
@@ -93,26 +95,26 @@ function factorVolatility(account, coinData) {
 }
 
 // Initialize coinData
-const initialize = async (coin, assetURL, testCoinData) => {
-    const { assetID, currency } = coin;
+const initialize = async (assetURL, testCoinData) => {
     // request price from API
     const resData = await axios.get(assetURL).then((response) => {
         return response.data;
     });
 
     // initialize previous price with live price
-    testCoinData.previousPrice = resData[assetID][currency];
+    testCoinData.previousPrice =
+        resData[testCoinData.coinID][testCoinData.currency];
 };
 
 // Interval function
-const tick = async (coin, assetURL, testCoinData, account) => {
-    const { assetID, currency } = coin;
+const tick = async (assetURL, testCoinData, account) => {
     // request price from API
     const resData = await axios.get(assetURL).then((response) => {
         return response.data;
     });
 
-    testCoinData.currentPrice = resData[assetID][currency];
+    testCoinData.currentPrice =
+        resData[testCoinData.coinID][testCoinData.currency];
 
     // Initialize runners
     factorVolatility(account, testCoinData);
@@ -123,17 +125,19 @@ const tick = async (coin, assetURL, testCoinData, account) => {
 
 // Primary runner
 const run = () => {
-    const coin = {
+    const config = {
         assetID: 'dogecoin', // Coin ID
         currency: 'usd', // Currency for comparison
+        startingBalance: 100,
+        binanceFee: 0.99925,
+        tickInterval: 3000, // Duration between each tick, milliseconds
     };
-    const tickInterval = 30000; // Duration between each tick, milliseconds
-    const assetURL = createCoinGeckoURL(coin.assetID, coin.currency);
-    let account = new Account(100, 0.99925); // end $ value of account after running through data
-    let testCoinData = new CoinData();
+    const assetURL = createCoinGeckoURL(config.assetID, config.currency);
+    let account = new Account(config.startingBalance, config.binanceFee); // end $ value of account after running through data
+    let testCoinData = new CoinData(config.assetID, config.currency);
 
-    initialize(coin, assetURL, testCoinData);
-    setInterval(tick, tickInterval, coin, assetURL, testCoinData, account);
+    initialize(assetURL, testCoinData);
+    setInterval(tick, config.tickInterval, assetURL, testCoinData, account);
 };
 
 run();
