@@ -1,7 +1,4 @@
-const data1Trim = require('../data/2021_17_02/dataTrimmed.json');
-const data2Trim = require('../data/2021_18_02/dataTrimmed.json');
-const data3Raw = require('../data/2021_19_02/dataRaw.json');
-const data3Trim = require('../data/2021_19_02/dataTrimmed.json');
+const dataRaw = require('../data/2021_18_02/dataRaw.json');
 
 /**
  * Returns number rounded to two decimal places.
@@ -18,7 +15,7 @@ function roundToTwo(num) {
  * @param {Array} startAccountValue - Initial account value.
  * @param {Array} startPrice - Initial price to work from.
  */
-function runData(startAccountValue, startPrice, data) {
+function runData(startAccountValue, startPrice, assetID, currency, data) {
     let theoryVal = startAccountValue; // end $ value of account after running through data
     let previousPrice = startPrice; // param to iterate off of
     let previousTrendUp = true; // boolean for previous trending
@@ -32,7 +29,7 @@ function runData(startAccountValue, startPrice, data) {
 
     // loop through all price objects in data json array
     data.forEach((priceObj) => {
-        let currentPrice = priceObj.price;
+        let currentPrice = priceObj[assetID][currency];
 
         // only factor if the current price is different from previous
         if (currentPrice !== previousPrice) {
@@ -64,17 +61,14 @@ function runData(startAccountValue, startPrice, data) {
     });
 
     console.log(`
-        Start Value: $${startAccountValue} 
+        Starting Value: $${startAccountValue} 
         Theory Value: $${roundToTwo(theoryVal)} 
 
-        Start Price: $${startPrice} 
-        End Price: $${previousPrice} 
+        Starting Price: $${startPrice} 
+        Current Price: $${previousPrice} 
         -----------------------------------
     `);
 }
 
 // Initialize runners
-runData(100, 231.4, data1Trim); // ends down
-runData(102.73, 226.2, data2Trim); // ends up
-runData(100, 0.054948, data3Raw); // ends up
-runData(100, 0.054948, data3Trim); // ends up
+runData(100, 226.2, 'litecoin', 'usd', dataRaw); // ends up
