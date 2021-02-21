@@ -67,6 +67,7 @@ function factorVolatility(account, coinData) {
     // only factor if the current price is different from previous
     if (coinData.currentPrice !== coinData.previousPrice) {
         let valPrcntModifier = coinData.currentPrice / coinData.previousPrice;
+        console.log('valMod:', valPrcntModifier);
         coinData.currentTrendUp =
             coinData.currentPrice > coinData.previousPrice ? true : false;
 
@@ -83,12 +84,12 @@ function factorVolatility(account, coinData) {
             // mimics buy in and resets previousTrendUp to true
             coinData.previousTrendUp = true;
         }
-
-        // set the previous to current at end of each priceObj loop
-        coinData.previousPrice = coinData.currentPrice;
     }
     console.log(account);
     console.log(coinData);
+
+    // set the previous to current at end of each priceObj loop
+    coinData.previousPrice = coinData.currentPrice;
 }
 
 // Initialize coinData
