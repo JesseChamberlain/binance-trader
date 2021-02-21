@@ -93,23 +93,26 @@ function factorVolatility(account, coinData) {
 }
 
 // Initialize coinData
-const initialize = async (assetURL, testCoinData) => {
+const initialize = async (coin, assetURL, testCoinData) => {
+    const { assetID, currency } = coin;
     // request price from API
     const resData = await axios.get(assetURL).then((response) => {
         return response.data;
     });
 
-    testCoinData.previousPrice = resData.dogecoin.usd;
+    // initialize previous price with live price
+    testCoinData.previousPrice = resData[assetID][currency];
 };
 
 // Interval function
-const tick = async (assetURL, testCoinData, account) => {
+const tick = async (coin, assetURL, testCoinData, account) => {
+    const { assetID, currency } = coin;
     // request price from API
     const resData = await axios.get(assetURL).then((response) => {
         return response.data;
     });
 
-    testCoinData.currentPrice = resData.dogecoin.usd;
+    testCoinData.currentPrice = resData[assetID][currency];
 
     // Initialize runners
     factorVolatility(account, testCoinData);
@@ -120,17 +123,17 @@ const tick = async (assetURL, testCoinData, account) => {
 
 // Primary runner
 const run = () => {
-    const config = {
+    const coin = {
         assetID: 'dogecoin', // Coin ID
         currency: 'usd', // Currency for comparison
     };
-    const tickInterval = 5000; // Duration between each tick, milliseconds
-    const assetURL = createCoinGeckoURL(config.assetID, config.currency);
+    const tickInterval = 30000; // Duration between each tick, milliseconds
+    const assetURL = createCoinGeckoURL(coin.assetID, coin.currency);
     let account = new Account(100, 0.99925); // end $ value of account after running through data
     let testCoinData = new CoinData();
 
-    initialize(assetURL, testCoinData);
-    setInterval(tick, tickInterval, assetURL, testCoinData, account);
+    initialize(coin, assetURL, testCoinData);
+    setInterval(tick, tickInterval, coin, assetURL, testCoinData, account);
 };
 
 run();
