@@ -23,39 +23,51 @@ class Account {
     }
 }
 
+// Creates the file that the data will be stored to
+function createDataCollectionJSON(testCoinData) {
+    const time = new Date();
+    const year = time.getFullYear();
+    const day = time.getDate();
+    const month = time.getMonth() + 1; // stupid base zero month
+    let filePath = `./data/${year}_${month}_${day}_${testCoinData.coinID}_${testCoinData.currency}.json`;
+
+    // create the JSON file with an empty array
+    fs.writeFile(filePath, JSON.stringify([]), 'utf8', (err) => {
+        if (err) {
+            console.log('Error writing file', err);
+        } else {
+            console.log('Successfully wrote createDataCollectionJSON file');
+        }
+    });
+
+    return filePath;
+}
+
 // Opens /data/collector.json (array json) and adds the response data to the array.
-function dataCollector(account, testCoinData) {
-    let ping = { time: 'to be built', account, testCoinData };
+function dataCollector(account, testCoinData, filePath) {
+    const time = new Date();
+    const timeToString = `${time.getHours()}:${time.getMinutes()}:${time.getSeconds()}`;
+    let ping = { time: timeToString, account, testCoinData };
     console.log(ping);
 
-    fs.readFile(
-        './data/collector.json',
-        'utf8',
-        function readFileCallback(err, data) {
-            if (err) {
-                console.log(err);
-            } else {
-                let collectorArray = JSON.parse(data); // renders file to object
-                collectorArray.push(ping); // add the response data
-                // console.log(collectorArray); // log to make sure it's working
-                let jsonData = JSON.stringify(collectorArray); //convert it back to json
+    fs.readFile(filePath, 'utf8', function readFileCallback(err, data) {
+        if (err) {
+            console.log(err);
+        } else {
+            let collectorArray = JSON.parse(data); // renders file to object
+            collectorArray.push(ping); // add the response data
+            let jsonData = JSON.stringify(collectorArray); //convert it back to json
 
-                // writes back to the file
-                fs.writeFile(
-                    './data/collector.json',
-                    jsonData,
-                    'utf8',
-                    (err) => {
-                        if (err) {
-                            console.log('Error writing file', err);
-                        } else {
-                            console.log('Successfully wrote file');
-                        }
-                    }
-                );
-            }
+            // writes back to the file
+            fs.writeFile(filePath, jsonData, 'utf8', (err) => {
+                if (err) {
+                    console.log('Error writing file', err);
+                } else {
+                    console.log('Successfully wrote file');
+                }
+            });
         }
-    );
+    });
 }
 
 /**
@@ -108,7 +120,7 @@ const initialize = async (assetURL, testCoinData) => {
 };
 
 // Interval function
-const tick = async (assetURL, testCoinData, account) => {
+const tick = async (assetURL, testCoinData, account, dataFilePath) => {
     // request price from API
     const responseData = await axios.get(assetURL).then((response) => {
         return response.data;
@@ -121,7 +133,7 @@ const tick = async (assetURL, testCoinData, account) => {
     factorVolatility(account, testCoinData);
 
     // Opens /data/collector.json (array json) and adds the data response to the array.
-    dataCollector(account, testCoinData);
+    dataCollector(account, testCoinData, dataFilePath);
 };
 
 // Primary runner
@@ -136,9 +148,17 @@ const run = () => {
     const assetURL = createCoinGeckoURL(config.assetID, config.currency);
     let account = new Account(config.startingBalance, config.binanceFee); // end $ value of account after running through data
     let testCoinData = new CoinData(config.assetID, config.currency);
+    let dataFilePath = createDataCollectionJSON(testCoinData);
 
     initialize(assetURL, testCoinData);
-    setInterval(tick, config.tickInterval, assetURL, testCoinData, account);
+    setInterval(
+        tick,
+        config.tickInterval,
+        assetURL,
+        testCoinData,
+        account,
+        dataFilePath
+    );
 };
 
 run();
