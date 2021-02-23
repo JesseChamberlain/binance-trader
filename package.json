@@ -15,7 +15,6 @@
     "author": "",
     "license": "ISC",
     "dependencies": {
-        "axios": "^0.21.1",
         "ccxt": "^1.41.83",
         "dotenv": "^8.2.0"
     },

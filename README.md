@@ -4,7 +4,7 @@ Info and documentation for binance-trader
 
 ## About
 
-In its current state, binance-trader is a crypto trading application configured against binanceus via the ccxt API, and utlizing coingecko for live market data.
+In its current state, binance-trader is a crypto trading application configured against binanceus via the ccxt API.
 
 NOTE: This is a work in progress. Master branch will generally have working & functional POC code, but v1.0.0 will be the first fully functional application.
 
@@ -19,7 +19,6 @@ Built as a command line node.js application.
 ### Dependencies
 
 -   ccxt
--   axios
 -   dotenv
 
 ### Dev Dependencies
