@@ -1,6 +1,6 @@
-const axios = require('axios');
-const { createCoinGeckoURL } = require('../helpers/coinGeckoURL');
+require('dotenv').config();
 const fs = require('fs');
+const ccxt = require('ccxt');
 
 // CoinData object for storing and mutating current stage of coin price
 class CoinData {
@@ -108,26 +108,26 @@ function factorVolatility(account, coinData) {
 }
 
 // Initialize coinData
-const initialize = async (assetURL, testCoinData) => {
+const initialize = async (testCoinData, binanceClient, marketSymbol) => {
     // request price from API
-    const responseData = await axios.get(assetURL).then((response) => {
-        return response.data;
-    });
+    const symbolTicker = await binanceClient.fetchTicker(marketSymbol);
 
     // initialize previous price with live price
-    testCoinData.previousPrice =
-        responseData[testCoinData.coinID][testCoinData.currency];
+    testCoinData.previousPrice = symbolTicker.last;
 };
 
 // Interval function
-const tick = async (assetURL, testCoinData, account, dataFilePath) => {
+const tick = async (
+    testCoinData,
+    account,
+    dataFilePath,
+    binanceClient,
+    marketSymbol
+) => {
     // request price from API
-    const responseData = await axios.get(assetURL).then((response) => {
-        return response.data;
-    });
+    const symbolTicker = await binanceClient.fetchTicker(marketSymbol);
 
-    testCoinData.currentPrice =
-        responseData[testCoinData.coinID][testCoinData.currency];
+    testCoinData.currentPrice = symbolTicker.last;
 
     // Initialize runners
     factorVolatility(account, testCoinData);
@@ -139,25 +139,31 @@ const tick = async (assetURL, testCoinData, account, dataFilePath) => {
 // Primary runner
 const run = () => {
     const config = {
-        assetID: 'dogecoin', // Coin ID
-        currency: 'usd', // Currency for comparison
+        asset: 'LTC', // LiteCoin
+        base: 'USDT', // Tether USD coin
         startingBalance: 100,
         binanceFee: 0.99925,
         tickInterval: 3000, // Duration between each tick, milliseconds
     };
-    const assetURL = createCoinGeckoURL(config.assetID, config.currency);
     let account = new Account(config.startingBalance, config.binanceFee); // end $ value of account after running through data
-    let testCoinData = new CoinData(config.assetID, config.currency);
+    let testCoinData = new CoinData(config.asset, config.base);
     let dataFilePath = createDataCollectionJSON(testCoinData);
+    // Instantiate binance client using the US binance API
+    const binanceClient = new ccxt.binanceus({
+        apiKey: process.env.API_KEY,
+        secret: process.env.API_SECRET,
+    });
+    const marketSymbol = `${config.asset}/${config.base}`;
 
-    initialize(assetURL, testCoinData);
+    initialize(testCoinData, binanceClient, marketSymbol);
     setInterval(
         tick,
         config.tickInterval,
-        assetURL,
         testCoinData,
         account,
-        dataFilePath
+        dataFilePath,
+        binanceClient,
+        marketSymbol
     );
 };
 
