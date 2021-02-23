@@ -1,16 +1,16 @@
 # README
 
-Info an documentation for binance-trader
+Info and documentation for binance-trader
 
 ## About
 
 In its current state, binance-trader is a crypto trading application configured against binanceus via the ccxt API, and utlizing coingecko for live market data.
 
-NOTE: This is a work in progress. Certain aspects might not work directly out of the box, but Master generally will have working & functional code. Version v1.0.0 will be the first fully functional application.
+NOTE: This is a work in progress. Master branch will generally have working & functional POC code, but v1.0.0 will be the first fully functional application.
 
 ## Technology
 
-Built as a clientless node.js application.
+Built as a command line node.js application.
 
 ### Stack
 
