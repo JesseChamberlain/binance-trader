@@ -18,6 +18,7 @@ const tick = async (config, binanceClient) => {
     ]);
     const assetPrice = results[0].data.litecoin.usd;
     const basePrice = results[1].data.tether.usd;
+    const binanceTicker = await binanceClient.fetchTicker(marketSymbol);
 
     // Sell order
     const sellOrder = await binanceClient.createOrder(
@@ -39,6 +40,7 @@ const tick = async (config, binanceClient) => {
     console.log(buyOrder);
     console.log(assetPrice);
     console.log(basePrice);
+    console.log(binanceTicker);
 };
 
 const run = () => {
