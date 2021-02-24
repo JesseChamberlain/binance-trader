@@ -16,10 +16,10 @@ class CoinData {
 
 // Account object for storing and mutating account values
 class Account {
-    constructor(startingValue, binanceFee) {
-        this.startingValue = startingValue;
-        this.theoryValue = startingValue;
-        this.binanceFee = binanceFee;
+    constructor() {
+        this.startingBalance = 0;
+        this.theoryBalance = 0;
+        this.binanceFee = 0;
     }
 }
 
@@ -36,7 +36,7 @@ function createDataCollectionJSON(testCoinData) {
         if (err) {
             console.log('Error writing file', err);
         } else {
-            console.log('Successfully wrote createDataCollectionJSON file');
+            console.log(`Successfully created ${filePath}`);
         }
     });
 
@@ -44,10 +44,8 @@ function createDataCollectionJSON(testCoinData) {
 }
 
 // Opens /data/collector.json (array json) and adds the response data to the array.
-function dataCollector(account, testCoinData, filePath) {
-    const time = new Date();
-    const timeToString = `${time.getHours()}:${time.getMinutes()}:${time.getSeconds()}`;
-    let ping = { time: timeToString, account, testCoinData };
+function dataCollector(account, symbolTicker, testCoinData, filePath) {
+    let ping = { time: symbolTicker.datetime, account, testCoinData };
     console.log(ping);
 
     fs.readFile(filePath, 'utf8', function readFileCallback(err, data) {
@@ -55,15 +53,15 @@ function dataCollector(account, testCoinData, filePath) {
             console.log(err);
         } else {
             let collectorArray = JSON.parse(data); // renders file to object
-            collectorArray.push(ping); // add the response data
-            let jsonData = JSON.stringify(collectorArray); //convert it back to json
+            collectorArray.push(ping); // add the ping response data
+            let jsonData = JSON.stringify(collectorArray); // convert it back to json
 
-            // writes back to the file
+            // writes above vars back to the file
             fs.writeFile(filePath, jsonData, 'utf8', (err) => {
                 if (err) {
                     console.log('Error writing file', err);
                 } else {
-                    console.log('Successfully wrote file');
+                    console.log(`Successfully wrote to ${filePath}`);
                 }
             });
         }
@@ -91,11 +89,11 @@ function factorVolatility(account, coinData) {
         // primary logic
         if (coinData.currentTrendUp && coinData.previousTrendUp) {
             // multiply theoryVal by modifier to mimic held value
-            account.theoryValue = account.theoryValue * valPrcntModifier;
+            account.theoryBalance = account.theoryBalance * valPrcntModifier;
         } else if (!coinData.currentTrendUp && coinData.previousTrendUp) {
             // multiple by modifier and binance fee to mimic market sell
-            account.theoryValue =
-                account.theoryValue * valPrcntModifier * account.binanceFee;
+            account.theoryBalance =
+                account.theoryBalance * valPrcntModifier * account.binanceFee;
             coinData.previousTrendUp = false;
         } else if (coinData.currentTrendUp && !coinData.previousTrendUp) {
             // mimics buy in and resets previousTrendUp to true
@@ -108,12 +106,22 @@ function factorVolatility(account, coinData) {
 }
 
 // Initialize coinData
-const initialize = async (testCoinData, binanceClient, marketSymbol) => {
-    // request price from API
-    const symbolTicker = await binanceClient.fetchTicker(marketSymbol);
-
-    // initialize previous price with live price
+const initialize = async (
+    base,
+    account,
+    testCoinData,
+    binanceClient,
+    symbol
+) => {
+    // request ticker info & initialize previous price with live price
+    const symbolTicker = await binanceClient.fetchTicker(symbol);
     testCoinData.previousPrice = symbolTicker.last;
+
+    // request account balance & initialize account information
+    const accountBalance = await binanceClient.fetchBalance();
+    account.startingBalance = accountBalance.free[base];
+    account.theoryBalance = account.startingBalance;
+    account.binanceFee = 1 - accountBalance.info.takerCommission / 10000;
 };
 
 // Interval function
@@ -122,40 +130,40 @@ const tick = async (
     account,
     dataFilePath,
     binanceClient,
-    marketSymbol
+    symbol
 ) => {
     // request price from API
-    const symbolTicker = await binanceClient.fetchTicker(marketSymbol);
+    const symbolTicker = await binanceClient.fetchTicker(symbol);
 
+    // set requested price to currentPrice
     testCoinData.currentPrice = symbolTicker.last;
 
-    // Initialize runners
+    // Runs primary algorithm
     factorVolatility(account, testCoinData);
 
-    // Opens /data/collector.json (array json) and adds the data response to the array.
-    dataCollector(account, testCoinData, dataFilePath);
+    // Opens .json file and adds the current data state to the array.
+    dataCollector(account, symbolTicker, testCoinData, dataFilePath);
 };
 
 // Primary runner
 const run = () => {
     const config = {
-        asset: 'LTC', // LiteCoin
+        asset: 'DOGE', // Coin asset to test
         base: 'USDT', // Tether USD coin
-        startingBalance: 100,
-        binanceFee: 0.99925,
-        tickInterval: 3000, // Duration between each tick, milliseconds
+        tickInterval: 30000, // Duration between each tick, milliseconds
     };
-    let account = new Account(config.startingBalance, config.binanceFee); // end $ value of account after running through data
+    const symbol = `${config.asset}/${config.base}`;
+    let account = new Account();
     let testCoinData = new CoinData(config.asset, config.base);
-    let dataFilePath = createDataCollectionJSON(testCoinData);
+    const dataFilePath = createDataCollectionJSON(testCoinData);
+
     // Instantiate binance client using the US binance API
     const binanceClient = new ccxt.binanceus({
         apiKey: process.env.API_KEY,
         secret: process.env.API_SECRET,
     });
-    const marketSymbol = `${config.asset}/${config.base}`;
 
-    initialize(testCoinData, binanceClient, marketSymbol);
+    initialize(config.base, account, testCoinData, binanceClient, symbol);
     setInterval(
         tick,
         config.tickInterval,
@@ -163,7 +171,7 @@ const run = () => {
         account,
         dataFilePath,
         binanceClient,
-        marketSymbol
+        symbol
     );
 };
 
