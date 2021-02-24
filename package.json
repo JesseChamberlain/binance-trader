@@ -1,10 +1,15 @@
 {
     "name": "binance-trader",
-    "version": "0.5.2",
+    "version": "0.5.3",
     "description": "Let's make some money!",
     "main": "index.js",
     "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "poc": "node algorithms/poc --ASSET=$ASSET --BASE=$BASE",
+        "btc": "node algorithms/poc --ASSET=BTC --BASE=USDT",
+        "ltc": "node algorithms/poc --ASSET=LTC --BASE=USDT",
+        "doge": "node algorithms/poc --ASSET=DOGE --BASE=USDT",
+        "xrp": "node algorithms/poc --ASSET=XRP --BASE=USDT"
     },
     "husky": {
         "hooks": {
@@ -16,7 +21,8 @@
     "license": "ISC",
     "dependencies": {
         "ccxt": "^1.41.83",
-        "dotenv": "^8.2.0"
+        "dotenv": "^8.2.0",
+        "minimist": "^1.2.5"
     },
     "devDependencies": {
         "eslint": "^7.20.0",

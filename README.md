@@ -18,17 +18,18 @@ Built as a command line node.js application.
 
 ### Dependencies
 
--   ccxt
--   dotenv
+-   [ccxt](https://github.com/ccxt/ccxt)
+-   [dotenv](https://github.com/motdotla/dotenv)
+-   [minimist](https://github.com/substack/minimist)
 
 ### Dev Dependencies
 
--   eslint
--   eslint-config-prettier
--   eslint-plugin-node
--   eslint-plugin-prettier
--   prettier
--   husky
+-   [eslint](https://github.com/eslint/eslint)
+-   [eslint-config-prettier](https://github.com/prettier/eslint-config-prettier)
+-   [eslint-plugin-node](https://github.com/mysticatea/eslint-plugin-node)
+-   [eslint-plugin-prettier](https://github.com/prettier/eslint-plugin-prettier)
+-   [prettier](https://github.com/prettier/prettier)
+-   [husky](https://github.com/typicode/husky)
 
 ## Setup
 
