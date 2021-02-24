@@ -4,7 +4,8 @@
     "description": "Let's make some money!",
     "main": "index.js",
     "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "poc": "node algorithms/poc"
     },
     "husky": {
         "hooks": {
