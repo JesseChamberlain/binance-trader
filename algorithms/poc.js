@@ -1,6 +1,7 @@
 require('dotenv').config();
 const fs = require('fs');
 const ccxt = require('ccxt');
+var parseArgs = require('minimist');
 
 // CoinData object for storing and mutating current stage of coin price
 class CoinData {
@@ -162,6 +163,8 @@ const run = () => {
         apiKey: process.env.API_KEY,
         secret: process.env.API_SECRET,
     });
+    let args = parseArgs(process.argv.slice(2));
+    console.log(args);
 
     initialize(config.base, account, testCoinData, binanceClient, symbol);
     setInterval(
