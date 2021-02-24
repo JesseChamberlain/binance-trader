@@ -148,10 +148,11 @@ const tick = async (
 
 // Primary runner
 const run = () => {
+    let args = parseArgs(process.argv.slice(2));
     const config = {
-        asset: 'DOGE', // Coin asset to test
-        base: 'USDT', // Tether USD coin
-        tickInterval: 30000, // Duration between each tick, milliseconds
+        asset: `${args.ASSET}`, // Coin asset to test
+        base: `${args.BASE}`, // Tether USD coin
+        tickInterval: 5000, // Duration between each tick, milliseconds
     };
     const symbol = `${config.asset}/${config.base}`;
     let account = new Account();
@@ -163,7 +164,6 @@ const run = () => {
         apiKey: process.env.API_KEY,
         secret: process.env.API_SECRET,
     });
-    let args = parseArgs(process.argv.slice(2));
     console.log(args);
 
     initialize(config.base, account, testCoinData, binanceClient, symbol);
