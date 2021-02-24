@@ -16,10 +16,10 @@ class CoinData {
 
 // Account object for storing and mutating account values
 class Account {
-    constructor() {
-        this.startingBalance = 0;
-        this.theoryBalance = 0;
-        this.binanceFee = 0;
+    constructor(startingValue, binanceFee) {
+        this.startingValue = startingValue;
+        this.theoryValue = startingValue;
+        this.binanceFee = binanceFee;
     }
 }
 
@@ -91,11 +91,11 @@ function factorVolatility(account, coinData) {
         // primary logic
         if (coinData.currentTrendUp && coinData.previousTrendUp) {
             // multiply theoryVal by modifier to mimic held value
-            account.theoryBalance = account.theoryBalance * valPrcntModifier;
+            account.theoryValue = account.theoryValue * valPrcntModifier;
         } else if (!coinData.currentTrendUp && coinData.previousTrendUp) {
             // multiple by modifier and binance fee to mimic market sell
-            account.theoryBalance =
-                account.theoryBalance * valPrcntModifier * account.binanceFee;
+            account.theoryValue =
+                account.theoryValue * valPrcntModifier * account.binanceFee;
             coinData.previousTrendUp = false;
         } else if (coinData.currentTrendUp && !coinData.previousTrendUp) {
             // mimics buy in and resets previousTrendUp to true
@@ -108,21 +108,12 @@ function factorVolatility(account, coinData) {
 }
 
 // Initialize coinData
-const initialize = async (
-    base,
-    account,
-    testCoinData,
-    binanceClient,
-    symbol
-) => {
-    // request ticker info & initialize previous price with live price
-    const symbolTicker = await binanceClient.fetchTicker(symbol);
-    testCoinData.previousPrice = symbolTicker.last;
+const initialize = async (testCoinData, binanceClient, marketSymbol) => {
+    // request price from API
+    const symbolTicker = await binanceClient.fetchTicker(marketSymbol);
 
-    // request account balance & initialize account information
-    const accountBalance = await binanceClient.fetchBalance();
-    account.startingBalance = accountBalance.free[base];
-    account.binanceFee = 1 - accountBalance.info.takerCommission / 10000;
+    // initialize previous price with live price
+    testCoinData.previousPrice = symbolTicker.last;
 };
 
 // Interval function
@@ -131,10 +122,10 @@ const tick = async (
     account,
     dataFilePath,
     binanceClient,
-    symbol
+    marketSymbol
 ) => {
     // request price from API
-    const symbolTicker = await binanceClient.fetchTicker(symbol);
+    const symbolTicker = await binanceClient.fetchTicker(marketSymbol);
 
     testCoinData.currentPrice = symbolTicker.last;
 
@@ -150,20 +141,21 @@ const run = () => {
     const config = {
         asset: 'LTC', // LiteCoin
         base: 'USDT', // Tether USD coin
+        startingBalance: 100,
+        binanceFee: 0.99925,
         tickInterval: 3000, // Duration between each tick, milliseconds
     };
-    const symbol = `${config.asset}/${config.base}`;
-    let account = new Account();
+    let account = new Account(config.startingBalance, config.binanceFee); // end $ value of account after running through data
     let testCoinData = new CoinData(config.asset, config.base);
-    const dataFilePath = createDataCollectionJSON(testCoinData);
-
+    let dataFilePath = createDataCollectionJSON(testCoinData);
     // Instantiate binance client using the US binance API
     const binanceClient = new ccxt.binanceus({
         apiKey: process.env.API_KEY,
         secret: process.env.API_SECRET,
     });
+    const marketSymbol = `${config.asset}/${config.base}`;
 
-    initialize(config.base, account, testCoinData, binanceClient, symbol);
+    initialize(testCoinData, binanceClient, marketSymbol);
     setInterval(
         tick,
         config.tickInterval,
@@ -171,7 +163,7 @@ const run = () => {
         account,
         dataFilePath,
         binanceClient,
-        symbol
+        marketSymbol
     );
 };
 
