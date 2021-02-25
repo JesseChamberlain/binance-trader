@@ -9,6 +9,7 @@
         "btc": "node algorithms/poc --ASSET=BTC --BASE=USDT",
         "ltc": "node algorithms/poc --ASSET=LTC --BASE=USDT",
         "doge": "node algorithms/poc --ASSET=DOGE --BASE=USDT",
+        "bnb": "node algorithms/poc --ASSET=BNB --BASE=USDT",
         "xrp": "node algorithms/poc --ASSET=XRP --BASE=USDT"
     },
     "husky": {

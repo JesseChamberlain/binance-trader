@@ -152,7 +152,7 @@ const run = () => {
     const config = {
         asset: `${args.ASSET}`, // Coin asset to test
         base: `${args.BASE}`, // Tether USD coin
-        tickInterval: 5000, // Duration between each tick, milliseconds
+        tickInterval: 300000, // Duration between each tick, milliseconds (5 seconds ideal)
     };
     const symbol = `${config.asset}/${config.base}`;
     let account = new Account();

@@ -1,0 +1,18 @@
+[
+    {
+        "time": "2021-02-25T12:51:49.109Z",
+        "account": {
+            "startingBalance": 425.72110231,
+            "theoryBalance": 426.2746167269275,
+            "binanceFee": 0.999
+        },
+        "testCoinData": {
+            "coinID": "DOGE",
+            "currency": "USDT",
+            "currentPrice": 0.0553719,
+            "previousPrice": 0.0553719,
+            "currentTrendUp": true,
+            "previousTrendUp": true
+        }
+    }
+]
