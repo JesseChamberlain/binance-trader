@@ -80,7 +80,7 @@ function factorVolatility(account, coinData) {
             coinData.current.isTrendingUp &&
             !coinData.previous.isTrendingUp
         ) {
-            // mimics buy in and resets previousTrendUp to true
+            // mimics buy in and resets previous.isTrendingUp to true
             coinData.previous.isTrendingUp = true;
         }
     }
@@ -114,7 +114,6 @@ const initialize = async (base, account, coinData, binanceClient, symbol) => {
     );
     coinData.previous = initializeTick;
     console.log(coinData);
-    // coinData.previousPrice = symbolTicker.last;
 
     // request account balance & initialize account information
     const accountBalance = await binanceClient.fetchBalance();
@@ -147,8 +146,8 @@ const run = () => {
     let args = parseArgs(process.argv.slice(2));
     const config = {
         asset: `${args.ASSET}`, // Coin asset to test
-        base: `${args.BASE}`, // Tether USD coin
-        tickInterval: 10000, // Duration between each tick, milliseconds (5 minutes ideal)
+        base: `${args.BASE}`, // Base coin for asset (USD, USDT, BTC usually)
+        tickInterval: 600000, // Duration between each tick, milliseconds (5, 10, 15 minutes ideal)
     };
     const symbol = `${config.asset}/${config.base}`;
 
@@ -165,10 +164,6 @@ const run = () => {
         currency: config.base,
         current: {},
         previous: {},
-        currentPrice: 0,
-        previousPrice: 0,
-        currentTrendUp: true,
-        previousTrendUp: true,
     };
     const dataFilePath = createDataCollectionJSON(coinData);
 
