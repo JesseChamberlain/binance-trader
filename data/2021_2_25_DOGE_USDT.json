@@ -1,18 +1,1 @@
-[
-    {
-        "time": "2021-02-25T12:51:49.109Z",
-        "account": {
-            "startingBalance": 425.72110231,
-            "theoryBalance": 426.2746167269275,
-            "binanceFee": 0.999
-        },
-        "testCoinData": {
-            "coinID": "DOGE",
-            "currency": "USDT",
-            "currentPrice": 0.0553719,
-            "previousPrice": 0.0553719,
-            "currentTrendUp": true,
-            "previousTrendUp": true
-        }
-    }
-]
+[{"time":"2021-02-26T00:53:12.958Z","account":{"startingBalance":425.72110231,"theoryBalance":425.72110231,"binanceFee":0.999},"testCoinData":{"coinID":"DOGE","currency":"USDT","currentPrice":0.0494372,"previousPrice":0.0494372,"currentTrendUp":true,"previousTrendUp":true}},{"time":"2021-02-26T00:53:12.958Z","account":{"startingBalance":425.72110231,"theoryBalance":425.72110231,"binanceFee":0.999},"testCoinData":{"coinID":"DOGE","currency":"USDT","currentPrice":0.0494372,"previousPrice":0.0494372,"currentTrendUp":true,"previousTrendUp":true}},{"time":"2021-02-26T00:53:20.988Z","account":{"startingBalance":425.72110231,"theoryBalance":425.72110231,"binanceFee":0.999},"testCoinData":{"coinID":"DOGE","currency":"USDT","currentPrice":0.0492809,"previousPrice":0.0494372,"currentTrendUp":true,"previousTrendUp":true}},{"time":"2021-02-26T00:53:22.972Z","account":{"startingBalance":425.72110231,"theoryBalance":425.72110231,"binanceFee":0.999},"testCoinData":{"coinID":"DOGE","currency":"USDT","currentPrice":0.0492809,"previousPrice":0.0494372,"currentTrendUp":true,"previousTrendUp":true}}]

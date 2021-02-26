@@ -3,27 +3,6 @@ const fs = require('fs');
 const ccxt = require('ccxt');
 var parseArgs = require('minimist');
 
-// CoinData object for storing and mutating current stage of coin price
-class CoinData {
-    constructor(coinID, currency) {
-        this.coinID = coinID;
-        this.currency = currency;
-        this.currentPrice = 0;
-        this.previousPrice = 0;
-        this.currentTrendUp = true;
-        this.previousTrendUp = true;
-    }
-}
-
-// Account object for storing and mutating account values
-class Account {
-    constructor() {
-        this.startingBalance = 0;
-        this.theoryBalance = 0;
-        this.binanceFee = 0;
-    }
-}
-
 // Creates the file that the data will be stored to
 function createDataCollectionJSON(testCoinData) {
     const time = new Date();
@@ -135,14 +114,14 @@ const tick = async (
 ) => {
     // request price from API
     const symbolTicker = await binanceClient.fetchTicker(symbol);
-
+    console.log(symbolTicker);
     // set requested price to currentPrice
     testCoinData.currentPrice = symbolTicker.last;
 
     // Runs primary algorithm
     factorVolatility(account, testCoinData);
 
-    // Opens .json file and adds the current data state to the array.
+    // // Opens .json file and adds the current data state to the array.
     dataCollector(account, symbolTicker, testCoinData, dataFilePath);
 };
 
@@ -152,11 +131,26 @@ const run = () => {
     const config = {
         asset: `${args.ASSET}`, // Coin asset to test
         base: `${args.BASE}`, // Tether USD coin
-        tickInterval: 300000, // Duration between each tick, milliseconds (5 seconds ideal)
+        tickInterval: 3000, // Duration between each tick, milliseconds (5 minutes ideal)
     };
     const symbol = `${config.asset}/${config.base}`;
-    let account = new Account();
-    let testCoinData = new CoinData(config.asset, config.base);
+
+    // Account object for storing and mutating account values
+    let account = {
+        startingBalance: 0,
+        theoryBalance: 0,
+        binanceFee: 0,
+    };
+
+    // CoinData object for storing and mutating current stage of coin price
+    let testCoinData = {
+        coinID: config.asset,
+        currency: config.base,
+        currentPrice: 0,
+        previousPrice: 0,
+        currentTrendUp: true,
+        previousTrendUp: true,
+    };
     const dataFilePath = createDataCollectionJSON(testCoinData);
 
     // Instantiate binance client using the US binance API
