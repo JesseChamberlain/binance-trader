@@ -1,1 +1,182 @@
-[{"time":"2021-02-26T00:53:12.958Z","account":{"startingBalance":425.72110231,"theoryBalance":425.72110231,"binanceFee":0.999},"testCoinData":{"coinID":"DOGE","currency":"USDT","currentPrice":0.0494372,"previousPrice":0.0494372,"currentTrendUp":true,"previousTrendUp":true}},{"time":"2021-02-26T00:53:12.958Z","account":{"startingBalance":425.72110231,"theoryBalance":425.72110231,"binanceFee":0.999},"testCoinData":{"coinID":"DOGE","currency":"USDT","currentPrice":0.0494372,"previousPrice":0.0494372,"currentTrendUp":true,"previousTrendUp":true}},{"time":"2021-02-26T00:53:20.988Z","account":{"startingBalance":425.72110231,"theoryBalance":425.72110231,"binanceFee":0.999},"testCoinData":{"coinID":"DOGE","currency":"USDT","currentPrice":0.0492809,"previousPrice":0.0494372,"currentTrendUp":true,"previousTrendUp":true}},{"time":"2021-02-26T00:53:22.972Z","account":{"startingBalance":425.72110231,"theoryBalance":425.72110231,"binanceFee":0.999},"testCoinData":{"coinID":"DOGE","currency":"USDT","currentPrice":0.0492809,"previousPrice":0.0494372,"currentTrendUp":true,"previousTrendUp":true}}]
+[
+    {
+        "time": "2021-02-26T03:41:51.025Z",
+        "account": {
+            "startingBalance": 425.72110231,
+            "theoryBalance": 425.72110231,
+            "binanceFee": 0.999
+        },
+        "coinData": {
+            "coinID": "DOGE",
+            "currency": "USDT",
+            "current": {
+                "price": 0.0514201,
+                "isTrendingUp": true,
+                "heikinAshi": {
+                    "open": 0.0532249,
+                    "close": 0.0534149,
+                    "high": 0.0567597,
+                    "low": 0.0489301
+                }
+            },
+            "previous": {
+                "price": 0.0514201,
+                "isTrendingUp": true,
+                "heikinAshi": {
+                    "open": 0.0532249,
+                    "close": 0.0536049,
+                    "high": 0.0567597,
+                    "low": 0.0489301
+                }
+            },
+            "currentPrice": 0,
+            "previousPrice": 0,
+            "currentTrendUp": true,
+            "previousTrendUp": true
+        }
+    },
+    {
+        "time": "2021-02-26T03:42:00.117Z",
+        "account": {
+            "startingBalance": 425.72110231,
+            "theoryBalance": 425.72110231,
+            "binanceFee": 0.999
+        },
+        "coinData": {
+            "coinID": "DOGE",
+            "currency": "USDT",
+            "current": {
+                "price": 0.0514201,
+                "isTrendingUp": true,
+                "heikinAshi": {
+                    "open": 0.0532249,
+                    "close": 0.0533199,
+                    "high": 0.0567597,
+                    "low": 0.0489301
+                }
+            },
+            "previous": {
+                "price": 0.0514201,
+                "isTrendingUp": true,
+                "heikinAshi": {
+                    "open": 0.0532249,
+                    "close": 0.0534149,
+                    "high": 0.0567597,
+                    "low": 0.0489301
+                }
+            },
+            "currentPrice": 0,
+            "previousPrice": 0,
+            "currentTrendUp": true,
+            "previousTrendUp": true
+        }
+    },
+    {
+        "time": "2021-02-26T03:42:05.806Z",
+        "account": {
+            "startingBalance": 425.72110231,
+            "theoryBalance": 425.72110231,
+            "binanceFee": 0.999
+        },
+        "coinData": {
+            "coinID": "DOGE",
+            "currency": "USDT",
+            "current": {
+                "price": 0.0514201,
+                "isTrendingUp": true,
+                "heikinAshi": {
+                    "open": 0.05325105,
+                    "close": 0.0532724,
+                    "high": 0.0567597,
+                    "low": 0.0489301
+                }
+            },
+            "previous": {
+                "price": 0.0514201,
+                "isTrendingUp": true,
+                "heikinAshi": {
+                    "open": 0.0532249,
+                    "close": 0.0533199,
+                    "high": 0.0567597,
+                    "low": 0.0489301
+                }
+            },
+            "currentPrice": 0,
+            "previousPrice": 0,
+            "currentTrendUp": true,
+            "previousTrendUp": true
+        }
+    },
+    {
+        "time": "2021-02-26T03:42:20.544Z",
+        "account": {
+            "startingBalance": 425.72110231,
+            "theoryBalance": 425.72110231,
+            "binanceFee": 0.999
+        },
+        "coinData": {
+            "coinID": "DOGE",
+            "currency": "USDT",
+            "current": {
+                "price": 0.0514201,
+                "isTrendingUp": true,
+                "heikinAshi": {
+                    "open": 0.053311875,
+                    "close": 0.053261724999999996,
+                    "high": 0.0567597,
+                    "low": 0.0489301
+                }
+            },
+            "previous": {
+                "price": 0.0514201,
+                "isTrendingUp": true,
+                "heikinAshi": {
+                    "open": 0.05325105,
+                    "close": 0.0532724,
+                    "high": 0.0567597,
+                    "low": 0.0489301
+                }
+            },
+            "currentPrice": 0,
+            "previousPrice": 0,
+            "currentTrendUp": true,
+            "previousTrendUp": true
+        }
+    },
+    {
+        "time": "2021-02-26T03:42:32.306Z",
+        "account": {
+            "startingBalance": 425.72110231,
+            "theoryBalance": 425.7219302374103,
+            "binanceFee": 0.999
+        },
+        "coinData": {
+            "coinID": "DOGE",
+            "currency": "USDT",
+            "current": {
+                "price": 0.0514202,
+                "isTrendingUp": true,
+                "heikinAshi": {
+                    "open": 0.0533119,
+                    "close": 0.053286799999999995,
+                    "high": 0.0567597,
+                    "low": 0.0489301
+                }
+            },
+            "previous": {
+                "price": 0.0514201,
+                "isTrendingUp": true,
+                "heikinAshi": {
+                    "open": 0.053311875,
+                    "close": 0.053261724999999996,
+                    "high": 0.0567597,
+                    "low": 0.0489301
+                }
+            },
+            "currentPrice": 0,
+            "previousPrice": 0,
+            "currentTrendUp": true,
+            "previousTrendUp": true
+        }
+    }
+]

@@ -4,12 +4,12 @@ const ccxt = require('ccxt');
 var parseArgs = require('minimist');
 
 // Creates the file that the data will be stored to
-function createDataCollectionJSON(testCoinData) {
+function createDataCollectionJSON(coinData) {
     const time = new Date();
     const year = time.getFullYear();
     const day = time.getDate();
     const month = time.getMonth() + 1; // stupid base zero month
-    let filePath = `./data/${year}_${month}_${day}_${testCoinData.coinID}_${testCoinData.currency}.json`;
+    let filePath = `./data/${year}_${month}_${day}_${coinData.coinID}_${coinData.currency}.json`;
 
     // create the JSON file with an empty array
     fs.writeFile(filePath, JSON.stringify([]), 'utf8', (err) => {
@@ -24,18 +24,16 @@ function createDataCollectionJSON(testCoinData) {
 }
 
 // Opens /data/collector.json (array json) and adds the response data to the array.
-function dataCollector(account, symbolTicker, testCoinData, filePath) {
-    let ping = { time: symbolTicker.datetime, account, testCoinData };
-    console.log(ping);
-
+const dataCollector = (ping, filePath) => {
+    const copiedPing = JSON.parse(JSON.stringify(ping));
+    console.log('copiedPing:', copiedPing);
     fs.readFile(filePath, 'utf8', function readFileCallback(err, data) {
         if (err) {
             console.log(err);
         } else {
             let collectorArray = JSON.parse(data); // renders file to object
-            collectorArray.push(ping); // add the ping response data
+            collectorArray.push(copiedPing); // add the ping response data
             let jsonData = JSON.stringify(collectorArray); // convert it back to json
-
             // writes above vars back to the file
             fs.writeFile(filePath, jsonData, 'utf8', (err) => {
                 if (err) {
@@ -46,7 +44,7 @@ function dataCollector(account, symbolTicker, testCoinData, filePath) {
             });
         }
     });
-}
+};
 
 /**
  * Runs data through logic and logs to console
@@ -60,42 +58,63 @@ function factorVolatility(account, coinData) {
     `);
 
     // only factor if the current price is different from previous
-    if (coinData.currentPrice !== coinData.previousPrice) {
-        let valPrcntModifier = coinData.currentPrice / coinData.previousPrice;
+    if (coinData.current.price !== coinData.previous.price) {
+        let valPrcntModifier = coinData.current.price / coinData.previous.price;
         console.log('valMod:', valPrcntModifier);
-        coinData.currentTrendUp =
-            coinData.currentPrice > coinData.previousPrice ? true : false;
+        coinData.current.isTrendingUp =
+            coinData.current.price > coinData.previous.price ? true : false;
 
         // primary logic
-        if (coinData.currentTrendUp && coinData.previousTrendUp) {
+        if (coinData.current.isTrendingUp && coinData.previous.isTrendingUp) {
             // multiply theoryVal by modifier to mimic held value
             account.theoryBalance = account.theoryBalance * valPrcntModifier;
-        } else if (!coinData.currentTrendUp && coinData.previousTrendUp) {
+        } else if (
+            !coinData.current.isTrendingUp &&
+            coinData.previous.isTrendingUp
+        ) {
             // multiple by modifier and binance fee to mimic market sell
             account.theoryBalance =
                 account.theoryBalance * valPrcntModifier * account.binanceFee;
-            coinData.previousTrendUp = false;
-        } else if (coinData.currentTrendUp && !coinData.previousTrendUp) {
+            coinData.previous.isTrendingUp = false;
+        } else if (
+            coinData.current.isTrendingUp &&
+            !coinData.previous.isTrendingUp
+        ) {
             // mimics buy in and resets previousTrendUp to true
-            coinData.previousTrendUp = true;
+            coinData.previous.isTrendingUp = true;
         }
     }
+}
 
-    // set the previous to current at end of each priceObj loop
-    coinData.previousPrice = coinData.currentPrice;
+function createTick(symbolTicker, trend, prevOpen, prevClose) {
+    const { open, close, high, low } = symbolTicker;
+    let tick = {
+        price: close,
+        isTrendingUp: trend,
+        heikinAshi: {
+            open: (open + close + high + low) / 4,
+            close: (prevOpen + prevClose) / 2,
+            high: Math.max(open, close, high),
+            low: Math.min(open, close, low),
+        },
+    };
+
+    return tick;
 }
 
 // Initialize coinData
-const initialize = async (
-    base,
-    account,
-    testCoinData,
-    binanceClient,
-    symbol
-) => {
+const initialize = async (base, account, coinData, binanceClient, symbol) => {
     // request ticker info & initialize previous price with live price
     const symbolTicker = await binanceClient.fetchTicker(symbol);
-    testCoinData.previousPrice = symbolTicker.last;
+    let initializeTick = createTick(
+        symbolTicker,
+        true,
+        symbolTicker.open,
+        symbolTicker.close
+    );
+    coinData.previous = initializeTick;
+    console.log(coinData);
+    // coinData.previousPrice = symbolTicker.last;
 
     // request account balance & initialize account information
     const accountBalance = await binanceClient.fetchBalance();
@@ -105,24 +124,22 @@ const initialize = async (
 };
 
 // Interval function
-const tick = async (
-    testCoinData,
-    account,
-    dataFilePath,
-    binanceClient,
-    symbol
-) => {
+const tick = async (coinData, account, dataFilePath, binanceClient, symbol) => {
+    const { open, close } = coinData.previous.heikinAshi;
     // request price from API
     const symbolTicker = await binanceClient.fetchTicker(symbol);
-    console.log(symbolTicker);
-    // set requested price to currentPrice
-    testCoinData.currentPrice = symbolTicker.last;
+    const ping = { time: symbolTicker.datetime, account, coinData };
+    let intervalTick = createTick(symbolTicker, true, open, close);
+    coinData.current = intervalTick;
 
     // Runs primary algorithm
-    factorVolatility(account, testCoinData);
+    factorVolatility(account, coinData);
 
-    // // Opens .json file and adds the current data state to the array.
-    dataCollector(account, symbolTicker, testCoinData, dataFilePath);
+    // Opens .json file and adds the current data state to the array.
+    dataCollector(ping, dataFilePath);
+
+    // set the previous to current at end of each priceObj loop
+    coinData.previous = coinData.current;
 };
 
 // Primary runner
@@ -131,7 +148,7 @@ const run = () => {
     const config = {
         asset: `${args.ASSET}`, // Coin asset to test
         base: `${args.BASE}`, // Tether USD coin
-        tickInterval: 3000, // Duration between each tick, milliseconds (5 minutes ideal)
+        tickInterval: 10000, // Duration between each tick, milliseconds (5 minutes ideal)
     };
     const symbol = `${config.asset}/${config.base}`;
 
@@ -143,15 +160,17 @@ const run = () => {
     };
 
     // CoinData object for storing and mutating current stage of coin price
-    let testCoinData = {
+    let coinData = {
         coinID: config.asset,
         currency: config.base,
+        current: {},
+        previous: {},
         currentPrice: 0,
         previousPrice: 0,
         currentTrendUp: true,
         previousTrendUp: true,
     };
-    const dataFilePath = createDataCollectionJSON(testCoinData);
+    const dataFilePath = createDataCollectionJSON(coinData);
 
     // Instantiate binance client using the US binance API
     const binanceClient = new ccxt.binanceus({
@@ -160,11 +179,11 @@ const run = () => {
     });
     console.log(args);
 
-    initialize(config.base, account, testCoinData, binanceClient, symbol);
+    initialize(config.base, account, coinData, binanceClient, symbol);
     setInterval(
         tick,
         config.tickInterval,
-        testCoinData,
+        coinData,
         account,
         dataFilePath,
         binanceClient,
