@@ -75,19 +75,22 @@ function factorVolatility(account, coinData) {
     }
 }
 
-function createTick(symbolTicker, trend, prevOpen, prevClose) {
-    const { open, close, high, low } = symbolTicker;
+function createTick(lastOHLCV, prevOpen, prevClose) {
+    const open = lastOHLCV[1];
+    const high = lastOHLCV[2];
+    const low = lastOHLCV[3];
+    const close = lastOHLCV[4];
     const heikinAshiOpen = (prevOpen + prevClose) / 2;
     const heikinAshiClose = (open + close + high + low) / 4;
     const heikinAshiHigh = Math.max(heikinAshiOpen, heikinAshiClose, high);
     const heikinAshiLow = Math.min(heikinAshiOpen, heikinAshiClose, low);
     const candleAvg = (heikinAshiOpen + heikinAshiClose) / 2;
     const shadowAvg = (heikinAshiHigh + heikinAshiLow) / 2;
+
     // will need to account for doji, currently "=" will be hollow
     const hollowCandle = candleAvg <= shadowAvg ? true : false;
     let tick = {
         price: close,
-        isTrendingUp: trend,
         hollowHACandle: hollowCandle,
         heikinAshi: {
             open: heikinAshiOpen,
@@ -95,12 +98,6 @@ function createTick(symbolTicker, trend, prevOpen, prevClose) {
             high: heikinAshiHigh,
             low: heikinAshiLow,
             hollowCandle: hollowCandle,
-        },
-        standardTick: {
-            open: open,
-            close: close,
-            high: high,
-            low: low,
         },
     };
 
@@ -110,12 +107,13 @@ function createTick(symbolTicker, trend, prevOpen, prevClose) {
 // Initialize coinData
 const initialize = async (base, account, coinData, binanceClient, symbol) => {
     // request ticker info & initialize previous price with live price
-    const symbolTicker = await binanceClient.fetchTicker(symbol);
+    const symbolOHLV = await binanceClient.fetchOHLCV(symbol);
+    const lastOHLCV = symbolOHLV[symbolOHLV.length - 1];
+
     let initializeTick = createTick(
-        symbolTicker,
-        true,
-        symbolTicker.open,
-        symbolTicker.previousClose
+        lastOHLCV,
+        lastOHLCV[1], // open
+        lastOHLCV[4] // close
     );
     coinData.previous = initializeTick;
     console.log(coinData);
@@ -130,14 +128,15 @@ const initialize = async (base, account, coinData, binanceClient, symbol) => {
 // Interval function
 const tick = async (coinData, account, dataFilePath, binanceClient, symbol) => {
     const { open, close } = coinData.previous.heikinAshi;
-    // request price from API
+
+    // request datetime from ticker from API
     const symbolTicker = await binanceClient.fetchTicker(symbol);
-    console.log(symbolTicker.close);
-    // USE THIS ONE INSTEAD OF ^ THAT ONE
-    const symbolOHLV = await binanceClient.fetchOHLCV(symbol);
-    console.log(symbolOHLV[symbolOHLV.length - 1]);
     const ping = { time: symbolTicker.datetime, account, coinData };
-    let intervalTick = createTick(symbolTicker, true, open, close);
+
+    // use this API for the OHLC prices
+    const symbolOHLV = await binanceClient.fetchOHLCV(symbol);
+    const lastOHLCV = symbolOHLV[symbolOHLV.length - 1];
+    let intervalTick = createTick(lastOHLCV, open, close);
     coinData.current = intervalTick;
 
     // Runs primary algorithm
