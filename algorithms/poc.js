@@ -1,50 +1,6 @@
 require('dotenv').config();
-const fs = require('fs');
 const ccxt = require('ccxt');
 var parseArgs = require('minimist');
-
-// Creates the file that the data will be stored to
-const createDataCollectionJSON = (coinData) => {
-    const time = new Date();
-    const year = time.getFullYear();
-    const day = time.getDate();
-    const month = time.getMonth() + 1; // stupid base zero month
-    let filePath = `./data/${year}_${month}_${day}_${coinData.coinID}_${coinData.currency}.json`;
-
-    // create the JSON file with an empty array
-    fs.writeFile(filePath, JSON.stringify([]), 'utf8', (err) => {
-        if (err) {
-            console.log('Error writing file', err);
-        } else {
-            console.log(`Successfully created ${filePath}`);
-        }
-    });
-
-    return filePath;
-};
-
-// Opens /data/collector.json (array json) and adds the response data to the array.
-const dataCollector = (ping, filePath) => {
-    const copiedPing = JSON.parse(JSON.stringify(ping));
-    console.log('copiedPing:', copiedPing);
-    fs.readFile(filePath, 'utf8', function readFileCallback(err, data) {
-        if (err) {
-            console.log(err);
-        } else {
-            let collectorArray = JSON.parse(data); // renders file to object
-            collectorArray.push(copiedPing); // add the ping response data
-            let jsonData = JSON.stringify(collectorArray); // convert it back to json
-            // writes above vars back to the file
-            fs.writeFile(filePath, jsonData, 'utf8', (err) => {
-                if (err) {
-                    console.log('Error writing file', err);
-                } else {
-                    console.log(`Successfully wrote to ${filePath}`);
-                }
-            });
-        }
-    });
-};
 
 /**
  * Runs data through logic and logs to console
@@ -52,12 +8,11 @@ const dataCollector = (ping, filePath) => {
  * @param {number} startAccountValue - Initial account value.
  */
 const factorVolatility = (account, coinData) => {
-    console.log(`
-        Checking Current Price
-        ****************************
-    `);
     let valPrcntModifier = coinData.current.price / coinData.previous.price;
-    console.log('valMod:', valPrcntModifier);
+    console.log(
+        `Hollow: ${coinData.current.heikinAshi.hollowCandle}, Price: `,
+        coinData.current.price
+    );
 
     if (
         coinData.current.heikinAshi.hollowCandle &&
@@ -104,49 +59,52 @@ const createTick = (lastOHLCV, prevOpen, prevClose) => {
     return tick;
 };
 
-// Initialize coinData
-const initialize = async (base, account, coinData, binanceClient, symbol) => {
-    // request ticker info & initialize previous price with live price
-    const symbolOHLV = await binanceClient.fetchOHLCV(symbol);
-    const lastOHLCV = symbolOHLV[symbolOHLV.length - 1];
+// Interval function
+const tick = async (coinData, account, binanceClient, symbol, base) => {
+    /** request ticker info & initialize previous price with live price
+     *  Note that the info from the last (current) candle may be incomplete until the candle is closed (until the next candle starts).
+     *
+     *  [
+     *      1504541580000, // UTC timestamp in milliseconds, integer
+     *      4235.4,        // (O)pen price, float
+     *      4240.6,        // (H)ighest price, float
+     *      4230.0,        // (L)owest price, float
+     *      4230.7,        // (C)losing price, float
+     *      37.72941911    // (V)olume (in terms of the base currency), float
+     *  ]
+     */
+    const symbolOHLCV = await binanceClient.fetchOHLCV(symbol);
+    const initialOHLCV = symbolOHLCV[0];
 
     let initializeTick = createTick(
-        lastOHLCV,
-        lastOHLCV[1], // open
-        lastOHLCV[4] // close
+        initialOHLCV,
+        initialOHLCV[1], // open
+        initialOHLCV[4] // close
     );
     coinData.previous = initializeTick;
-    console.log(coinData);
 
     // request account balance & initialize account information
     const accountBalance = await binanceClient.fetchBalance();
     account.startingBalance = accountBalance.free[base];
     account.theoryBalance = account.startingBalance;
     account.binanceFee = 1 - accountBalance.info.takerCommission / 10000;
-};
 
-// Interval function
-const tick = async (coinData, account, dataFilePath, binanceClient, symbol) => {
-    const { open, close } = coinData.previous.heikinAshi;
+    // this could work, need to map and take an average of every 5 instances
+    symbolOHLCV.forEach((lastOHLCV, index) => {
+        if (index % 50 === 0) {
+            const { open, close } = coinData.previous.heikinAshi;
+            let intervalTick = createTick(lastOHLCV, open, close);
+            coinData.current = intervalTick;
 
-    // request datetime from ticker from API
-    const symbolTicker = await binanceClient.fetchTicker(symbol);
-    const ping = { time: symbolTicker.datetime, account, coinData };
+            // Runs primary algorithm
+            factorVolatility(account, coinData);
 
-    // use this API for the OHLC prices
-    const symbolOHLV = await binanceClient.fetchOHLCV(symbol);
-    const lastOHLCV = symbolOHLV[symbolOHLV.length - 1];
-    let intervalTick = createTick(lastOHLCV, open, close);
-    coinData.current = intervalTick;
+            // set the previous to current at end of each priceObj loop
+            coinData.previous = coinData.current;
+        }
+    });
 
-    // Runs primary algorithm
-    factorVolatility(account, coinData);
-
-    // Opens .json file and adds the current data state to the array.
-    dataCollector(ping, dataFilePath);
-
-    // set the previous to current at end of each priceObj loop
-    coinData.previous = coinData.current;
+    console.log(account, symbolOHLCV[symbolOHLCV.length - 1]);
 };
 
 // Primary runner
@@ -155,7 +113,6 @@ const run = () => {
     const config = {
         asset: `${args.ASSET}`, // Coin asset to test
         base: `${args.BASE}`, // Base coin for asset (USD, USDT, BTC usually)
-        tickInterval: 300000, // Duration between each tick, milliseconds (5, 10, 15 minutes ideal)
     };
     const symbol = `${config.asset}/${config.base}`;
 
@@ -173,7 +130,6 @@ const run = () => {
         current: {},
         previous: {},
     };
-    const dataFilePath = createDataCollectionJSON(coinData);
 
     // Instantiate binance client using the US binance API
     const binanceClient = new ccxt.binanceus({
@@ -181,18 +137,8 @@ const run = () => {
         secret: process.env.API_SECRET,
     });
     console.log(args);
-    // console.log(binanceClient);
 
-    initialize(config.base, account, coinData, binanceClient, symbol);
-    setInterval(
-        tick,
-        config.tickInterval,
-        coinData,
-        account,
-        dataFilePath,
-        binanceClient,
-        symbol
-    );
+    tick(coinData, account, binanceClient, symbol, config.base);
 };
 
 run();
