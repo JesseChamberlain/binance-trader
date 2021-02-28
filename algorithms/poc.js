@@ -9,10 +9,10 @@ var parseArgs = require('minimist');
  */
 const factorVolatility = (account, coinData) => {
     let valPrcntModifier = coinData.current.price / coinData.previous.price;
-    console.log(
-        `Hollow: ${coinData.current.heikinAshi.hollowCandle}, Price: `,
-        coinData.current.price
-    );
+    // console.log(
+    //     `Hollow: ${coinData.current.heikinAshi.hollowCandle}, Price: `,
+    //     coinData.current.price
+    // );
 
     if (
         coinData.current.heikinAshi.hollowCandle &&
@@ -60,7 +60,14 @@ const createTick = (lastOHLCV, prevOpen, prevClose) => {
 };
 
 // Interval function
-const tick = async (coinData, account, binanceClient, symbol, base) => {
+const tick = async (
+    coinData,
+    account,
+    binanceClient,
+    symbol,
+    base,
+    interval
+) => {
     /** request ticker info & initialize previous price with live price
      *  Note that the info from the last (current) candle may be incomplete until the candle is closed (until the next candle starts).
      *
@@ -74,6 +81,7 @@ const tick = async (coinData, account, binanceClient, symbol, base) => {
      *  ]
      */
     const symbolOHLCV = await binanceClient.fetchOHLCV(symbol);
+    symbolOHLCV.pop();
     const initialOHLCV = symbolOHLCV[0];
 
     let initializeTick = createTick(
@@ -89,11 +97,29 @@ const tick = async (coinData, account, binanceClient, symbol, base) => {
     account.theoryBalance = account.startingBalance;
     account.binanceFee = 1 - accountBalance.info.takerCommission / 10000;
 
+    const intervalFactor = interval;
+    let storage = {
+        o: [],
+        h: [],
+        l: [],
+        c: [],
+    };
+
     // this could work, need to map and take an average of every 5 instances
     symbolOHLCV.forEach((lastOHLCV, index) => {
-        if (index % 50 === 0) {
+        storage.o.push(lastOHLCV[1]);
+        storage.h.push(lastOHLCV[2]);
+        storage.l.push(lastOHLCV[3]);
+        storage.c.push(lastOHLCV[4]);
+
+        if (index % intervalFactor === 0 && index != 0) {
+            const o = storage.o[storage.o.length - 1];
+            const h = Math.max(...storage.h);
+            const l = Math.min(...storage.l);
+            const c = storage.c[0];
+            const storageToFactor = [0, o, h, l, c, 0];
             const { open, close } = coinData.previous.heikinAshi;
-            let intervalTick = createTick(lastOHLCV, open, close);
+            let intervalTick = createTick(storageToFactor, open, close);
             coinData.current = intervalTick;
 
             // Runs primary algorithm
@@ -101,6 +127,12 @@ const tick = async (coinData, account, binanceClient, symbol, base) => {
 
             // set the previous to current at end of each priceObj loop
             coinData.previous = coinData.current;
+            storage = {
+                o: [],
+                h: [],
+                l: [],
+                c: [],
+            };
         }
     });
 
@@ -113,6 +145,7 @@ const run = () => {
     const config = {
         asset: `${args.ASSET}`, // Coin asset to test
         base: `${args.BASE}`, // Base coin for asset (USD, USDT, BTC usually)
+        interval: `${args.INTERVAL}`, // interval to factor candles
     };
     const symbol = `${config.asset}/${config.base}`;
 
@@ -138,7 +171,14 @@ const run = () => {
     });
     console.log(args);
 
-    tick(coinData, account, binanceClient, symbol, config.base);
+    tick(
+        coinData,
+        account,
+        binanceClient,
+        symbol,
+        config.base,
+        config.interval
+    );
 };
 
 run();
