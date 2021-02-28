@@ -62,10 +62,7 @@ const tick = async (
     interval
 ) => {
     /** request ticker info & initialize previous price with live price
-     *  Note that the info from the last (current) candle may be incomplete
-     *  until the candle is closed (until the next candle starts).
-     *
-     *  Utilize the timestamp to identify new candles and add them to storage
+     *  Note that the info from the last (current) candle may be incomplete until the candle is closed (until the next candle starts).
      *  [
      *      1504541580000, // UTC timestamp in milliseconds, integer
      *      4235.4,        // (O)pen price, float
