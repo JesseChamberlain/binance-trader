@@ -115,7 +115,7 @@ const initialize = async (base, account, coinData, binanceClient, symbol) => {
         symbolTicker,
         true,
         symbolTicker.open,
-        symbolTicker.close
+        symbolTicker.previousClose
     );
     coinData.previous = initializeTick;
     console.log(coinData);
@@ -132,6 +132,10 @@ const tick = async (coinData, account, dataFilePath, binanceClient, symbol) => {
     const { open, close } = coinData.previous.heikinAshi;
     // request price from API
     const symbolTicker = await binanceClient.fetchTicker(symbol);
+    console.log(symbolTicker.close);
+    // USE THIS ONE INSTEAD OF ^ THAT ONE
+    const symbolOHLV = await binanceClient.fetchOHLCV(symbol);
+    console.log(symbolOHLV[symbolOHLV.length - 1]);
     const ping = { time: symbolTicker.datetime, account, coinData };
     let intervalTick = createTick(symbolTicker, true, open, close);
     coinData.current = intervalTick;
@@ -152,7 +156,7 @@ const run = () => {
     const config = {
         asset: `${args.ASSET}`, // Coin asset to test
         base: `${args.BASE}`, // Base coin for asset (USD, USDT, BTC usually)
-        tickInterval: 30000, // Duration between each tick, milliseconds (5, 10, 15 minutes ideal)
+        tickInterval: 5000, // Duration between each tick, milliseconds (5, 10, 15 minutes ideal)
     };
     const symbol = `${config.asset}/${config.base}`;
 
@@ -178,6 +182,7 @@ const run = () => {
         secret: process.env.API_SECRET,
     });
     console.log(args);
+    // console.log(binanceClient);
 
     initialize(config.base, account, coinData, binanceClient, symbol);
     setInterval(
