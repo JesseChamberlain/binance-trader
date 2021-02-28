@@ -62,7 +62,10 @@ const tick = async (
     interval
 ) => {
     /** request ticker info & initialize previous price with live price
-     *  Note that the info from the last (current) candle may be incomplete until the candle is closed (until the next candle starts).
+     *  Note that the info from the last (current) candle may be incomplete
+     *  until the candle is closed (until the next candle starts).
+     *
+     *  Utilize the timestamp to identify new candles and add them to storage
      *  [
      *      1504541580000, // UTC timestamp in milliseconds, integer
      *      4235.4,        // (O)pen price, float
@@ -121,7 +124,11 @@ const tick = async (
         }
     });
 
-    console.log(account, symbolOHLCV[symbolOHLCV.length - 1]);
+    console.log(
+        account,
+        symbolOHLCV[0][4],
+        symbolOHLCV[symbolOHLCV.length - 1][4]
+    );
 };
 
 // Primary runner

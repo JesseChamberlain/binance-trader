@@ -124,7 +124,11 @@ const tick = async (
         }
     });
 
-    console.log(account, symbolOHLCV[symbolOHLCV.length - 1]);
+    console.log(
+        account,
+        symbolOHLCV[0][4],
+        symbolOHLCV[symbolOHLCV.length - 1][4]
+    );
 };
 
 // Primary runner
