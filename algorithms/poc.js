@@ -4,7 +4,7 @@ const ccxt = require('ccxt');
 var parseArgs = require('minimist');
 
 // Creates the file that the data will be stored to
-function createDataCollectionJSON(coinData) {
+const createDataCollectionJSON = (coinData) => {
     const time = new Date();
     const year = time.getFullYear();
     const day = time.getDate();
@@ -21,7 +21,7 @@ function createDataCollectionJSON(coinData) {
     });
 
     return filePath;
-}
+};
 
 // Opens /data/collector.json (array json) and adds the response data to the array.
 const dataCollector = (ping, filePath) => {
@@ -51,7 +51,7 @@ const dataCollector = (ping, filePath) => {
  * @param {object} data - JSON object from API call.
  * @param {number} startAccountValue - Initial account value.
  */
-function factorVolatility(account, coinData) {
+const factorVolatility = (account, coinData) => {
     console.log(`
         Checking Current Price
         ****************************
@@ -73,9 +73,9 @@ function factorVolatility(account, coinData) {
         account.theoryBalance =
             account.theoryBalance * valPrcntModifier * account.binanceFee;
     }
-}
+};
 
-function createTick(lastOHLCV, prevOpen, prevClose) {
+const createTick = (lastOHLCV, prevOpen, prevClose) => {
     const open = lastOHLCV[1];
     const high = lastOHLCV[2];
     const low = lastOHLCV[3];
@@ -102,7 +102,7 @@ function createTick(lastOHLCV, prevOpen, prevClose) {
     };
 
     return tick;
-}
+};
 
 // Initialize coinData
 const initialize = async (base, account, coinData, binanceClient, symbol) => {
@@ -155,7 +155,7 @@ const run = () => {
     const config = {
         asset: `${args.ASSET}`, // Coin asset to test
         base: `${args.BASE}`, // Base coin for asset (USD, USDT, BTC usually)
-        tickInterval: 5000, // Duration between each tick, milliseconds (5, 10, 15 minutes ideal)
+        tickInterval: 60000, // Duration between each tick, milliseconds (5, 10, 15 minutes ideal)
     };
     const symbol = `${config.asset}/${config.base}`;
 
