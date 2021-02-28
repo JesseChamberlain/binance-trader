@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2021-02-28
+
+### Added
+
+-   live price data pulled from fetchOHLCV endpoint, refactored data accordingly
+-   rebuilt heinkin ashi logic and moved it out of the object config
+-   hollowCandle boolean and reconfigured volatility logic accordingly
+
+### Updated
+
+-   poc to take CLI arguments instead of hardcoded vars
+-   cleaned up function naming
+
+## [0.6.0] - 2021-02-26
+
+### Added
+
+-   ogject literals to config vs classes
+-   heinkin ashi object to tick (but built it wrong...)
+-   cuurent and previous as objects and created a "intervalTick" object
+
+### Updated
+
+-   pulled more dynamic info from fetchTick endpoint
+
 ## [0.5.3] - 2021-02-23
 
 ### Added
@@ -151,6 +176,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   Working demo and API connections
 
+[0.7.0]: https://github.com/JesseChamberlain/binance-trader/compare/v0.6.0...v0.7.0
+[0.6.0]: https://github.com/JesseChamberlain/binance-trader/compare/v0.5.3...v0.6.0
 [0.5.3]: https://github.com/JesseChamberlain/binance-trader/compare/v0.5.2...v0.5.3
 [0.5.2]: https://github.com/JesseChamberlain/binance-trader/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/JesseChamberlain/binance-trader/compare/v0.5.0...v0.5.1

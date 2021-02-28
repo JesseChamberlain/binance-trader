@@ -4,12 +4,12 @@ const ccxt = require('ccxt');
 var parseArgs = require('minimist');
 
 // Creates the file that the data will be stored to
-const createDataCollectionJSON = (coinData) => {
+function createDataCollectionJSON(coinData) {
     const time = new Date();
     const year = time.getFullYear();
     const day = time.getDate();
     const month = time.getMonth() + 1; // stupid base zero month
-    let filePath = `./data/${year}_${month}_${day}_${coinData.coinID}_${coinData.currency}.json`;
+    let filePath = `./data/V1_${year}_${month}_${day}_${coinData.coinID}_${coinData.currency}.json`;
 
     // create the JSON file with an empty array
     fs.writeFile(filePath, JSON.stringify([]), 'utf8', (err) => {
@@ -21,7 +21,7 @@ const createDataCollectionJSON = (coinData) => {
     });
 
     return filePath;
-};
+}
 
 // Opens /data/collector.json (array json) and adds the response data to the array.
 const dataCollector = (ping, filePath) => {
@@ -51,46 +51,54 @@ const dataCollector = (ping, filePath) => {
  * @param {object} data - JSON object from API call.
  * @param {number} startAccountValue - Initial account value.
  */
-const factorVolatility = (account, coinData) => {
+function factorVolatility(account, coinData) {
     console.log(`
         Checking Current Price
         ****************************
     `);
-    let valPrcntModifier = coinData.current.price / coinData.previous.price;
-    console.log('valMod:', valPrcntModifier);
 
-    if (
-        coinData.current.heikinAshi.hollowCandle &&
-        coinData.previous.heikinAshi.hollowCandle
-    ) {
-        // multiply theoryVal by modifier to mimic held value
-        account.theoryBalance = account.theoryBalance * valPrcntModifier;
-    } else if (
-        !coinData.current.heikinAshi.hollowCandle &&
-        coinData.previous.heikinAshi.hollowCandle
-    ) {
-        // multiple by modifier and binance fee to mimic market sell
-        account.theoryBalance =
-            account.theoryBalance * valPrcntModifier * account.binanceFee;
+    // only factor if the current price is different from previous
+    if (coinData.current.price !== coinData.previous.price) {
+        let valPrcntModifier = coinData.current.price / coinData.previous.price;
+        console.log('valMod:', valPrcntModifier);
+        coinData.current.isTrendingUp =
+            coinData.current.price > coinData.previous.price ? true : false;
+
+        // primary logic
+        if (coinData.current.isTrendingUp && coinData.previous.isTrendingUp) {
+            // multiply theoryVal by modifier to mimic held value
+            account.theoryBalance = account.theoryBalance * valPrcntModifier;
+        } else if (
+            !coinData.current.isTrendingUp &&
+            coinData.previous.isTrendingUp
+        ) {
+            // multiple by modifier and binance fee to mimic market sell
+            account.theoryBalance =
+                account.theoryBalance * valPrcntModifier * account.binanceFee;
+            coinData.previous.isTrendingUp = false;
+        } else if (
+            coinData.current.isTrendingUp &&
+            !coinData.previous.isTrendingUp
+        ) {
+            // mimics buy in and resets previous.isTrendingUp to true
+            coinData.previous.isTrendingUp = true;
+        }
     }
-};
+}
 
-const createTick = (lastOHLCV, prevOpen, prevClose) => {
-    const open = lastOHLCV[1];
-    const high = lastOHLCV[2];
-    const low = lastOHLCV[3];
-    const close = lastOHLCV[4];
+function createTick(symbolTicker, trend, prevOpen, prevClose) {
+    const { open, close, high, low } = symbolTicker;
     const heikinAshiOpen = (prevOpen + prevClose) / 2;
     const heikinAshiClose = (open + close + high + low) / 4;
     const heikinAshiHigh = Math.max(heikinAshiOpen, heikinAshiClose, high);
     const heikinAshiLow = Math.min(heikinAshiOpen, heikinAshiClose, low);
     const candleAvg = (heikinAshiOpen + heikinAshiClose) / 2;
     const shadowAvg = (heikinAshiHigh + heikinAshiLow) / 2;
-
     // will need to account for doji, currently "=" will be hollow
     const hollowCandle = candleAvg <= shadowAvg ? true : false;
     let tick = {
         price: close,
+        isTrendingUp: trend,
         hollowHACandle: hollowCandle,
         heikinAshi: {
             open: heikinAshiOpen,
@@ -99,21 +107,26 @@ const createTick = (lastOHLCV, prevOpen, prevClose) => {
             low: heikinAshiLow,
             hollowCandle: hollowCandle,
         },
+        standardTick: {
+            open: open,
+            close: close,
+            high: high,
+            low: low,
+        },
     };
 
     return tick;
-};
+}
 
 // Initialize coinData
 const initialize = async (base, account, coinData, binanceClient, symbol) => {
     // request ticker info & initialize previous price with live price
-    const symbolOHLV = await binanceClient.fetchOHLCV(symbol);
-    const lastOHLCV = symbolOHLV[symbolOHLV.length - 1];
-
+    const symbolTicker = await binanceClient.fetchTicker(symbol);
     let initializeTick = createTick(
-        lastOHLCV,
-        lastOHLCV[1], // open
-        lastOHLCV[4] // close
+        symbolTicker,
+        true,
+        symbolTicker.open,
+        symbolTicker.close
     );
     coinData.previous = initializeTick;
     console.log(coinData);
@@ -128,15 +141,10 @@ const initialize = async (base, account, coinData, binanceClient, symbol) => {
 // Interval function
 const tick = async (coinData, account, dataFilePath, binanceClient, symbol) => {
     const { open, close } = coinData.previous.heikinAshi;
-
-    // request datetime from ticker from API
+    // request price from API
     const symbolTicker = await binanceClient.fetchTicker(symbol);
     const ping = { time: symbolTicker.datetime, account, coinData };
-
-    // use this API for the OHLC prices
-    const symbolOHLV = await binanceClient.fetchOHLCV(symbol);
-    const lastOHLCV = symbolOHLV[symbolOHLV.length - 1];
-    let intervalTick = createTick(lastOHLCV, open, close);
+    let intervalTick = createTick(symbolTicker, true, open, close);
     coinData.current = intervalTick;
 
     // Runs primary algorithm
@@ -181,7 +189,6 @@ const run = () => {
         secret: process.env.API_SECRET,
     });
     console.log(args);
-    // console.log(binanceClient);
 
     initialize(config.base, account, coinData, binanceClient, symbol);
     setInterval(
