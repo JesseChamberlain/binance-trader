@@ -9,7 +9,7 @@ function createDataCollectionJSON(coinData) {
     const year = time.getFullYear();
     const day = time.getDate();
     const month = time.getMonth() + 1; // stupid base zero month
-    let filePath = `./data/${year}_${month}_${day}_${coinData.coinID}_${coinData.currency}.json`;
+    let filePath = `./data/V1_${year}_${month}_${day}_${coinData.coinID}_${coinData.currency}.json`;
 
     // create the JSON file with an empty array
     fs.writeFile(filePath, JSON.stringify([]), 'utf8', (err) => {

@@ -56,33 +56,22 @@ function factorVolatility(account, coinData) {
         Checking Current Price
         ****************************
     `);
+    let valPrcntModifier = coinData.current.price / coinData.previous.price;
+    console.log('valMod:', valPrcntModifier);
 
-    // only factor if the current price is different from previous
-    if (coinData.current.price !== coinData.previous.price) {
-        let valPrcntModifier = coinData.current.price / coinData.previous.price;
-        console.log('valMod:', valPrcntModifier);
-        coinData.current.isTrendingUp =
-            coinData.current.price > coinData.previous.price ? true : false;
-
-        // primary logic
-        if (coinData.current.isTrendingUp && coinData.previous.isTrendingUp) {
-            // multiply theoryVal by modifier to mimic held value
-            account.theoryBalance = account.theoryBalance * valPrcntModifier;
-        } else if (
-            !coinData.current.isTrendingUp &&
-            coinData.previous.isTrendingUp
-        ) {
-            // multiple by modifier and binance fee to mimic market sell
-            account.theoryBalance =
-                account.theoryBalance * valPrcntModifier * account.binanceFee;
-            coinData.previous.isTrendingUp = false;
-        } else if (
-            coinData.current.isTrendingUp &&
-            !coinData.previous.isTrendingUp
-        ) {
-            // mimics buy in and resets previous.isTrendingUp to true
-            coinData.previous.isTrendingUp = true;
-        }
+    if (
+        coinData.current.heikinAshi.hollowCandle &&
+        coinData.previous.heikinAshi.hollowCandle
+    ) {
+        // multiply theoryVal by modifier to mimic held value
+        account.theoryBalance = account.theoryBalance * valPrcntModifier;
+    } else if (
+        !coinData.current.heikinAshi.hollowCandle &&
+        coinData.previous.heikinAshi.hollowCandle
+    ) {
+        // multiple by modifier and binance fee to mimic market sell
+        account.theoryBalance =
+            account.theoryBalance * valPrcntModifier * account.binanceFee;
     }
 }
 
