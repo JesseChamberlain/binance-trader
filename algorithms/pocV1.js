@@ -163,7 +163,7 @@ const run = () => {
     const config = {
         asset: `${args.ASSET}`, // Coin asset to test
         base: `${args.BASE}`, // Base coin for asset (USD, USDT, BTC usually)
-        tickInterval: 60000, // Duration between each tick, milliseconds (5, 10, 15 minutes ideal)
+        tickInterval: 300000, // Duration between each tick, milliseconds (5, 10, 15 minutes ideal)
     };
     const symbol = `${config.asset}/${config.base}`;
 
