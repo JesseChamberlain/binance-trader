@@ -11,7 +11,8 @@
         "doge": "node algorithms/poc --ASSET=DOGE --BASE=USDT --INTERVAL=5",
         "bnb": "node algorithms/poc --ASSET=BNB --BASE=USDT --INTERVAL=5",
         "ada": "node algorithms/poc --ASSET=ADA --BASE=USDT --INTERVAL=5",
-        "xrp": "node algorithms/poc --ASSET=XRP --BASE=USDT --INTERVAL=5"
+        "xrp": "node algorithms/poc --ASSET=XRP --BASE=USDT --INTERVAL=5",
+        "eth": "node algorithms/poc --ASSET=ETH --BASE=USDT --INTERVAL=5"
     },
     "husky": {
         "hooks": {

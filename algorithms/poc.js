@@ -52,15 +52,38 @@ const createTick = (lastOHLCV, prevOpen, prevClose) => {
     return tick;
 };
 
+// Initialize coinData
+const initialize = async (base, account, coinData, binanceClient, symbol) => {
+    // request ticker info & initialize previous price with live price
+    const symbolOHLCV = await binanceClient.fetchOHLCV(symbol);
+    // last candle might be incomplete
+    const initialOHLCV = symbolOHLCV[symbolOHLCV.length - 2];
+    let initializeTick = createTick(
+        initialOHLCV,
+        initialOHLCV[1], // open
+        initialOHLCV[4] // close
+    );
+    coinData.previous = initializeTick;
+    // request account balance & initialize account information
+    const accountBalance = await binanceClient.fetchBalance();
+    account.startingBalance = accountBalance.free[base];
+    account.theoryBalance = account.startingBalance;
+    account.binanceFee = 1 - accountBalance.info.takerCommission / 10000;
+};
+
 // Interval function
 const tick = async (
     coinData,
     account,
     binanceClient,
     symbol,
-    base,
-    interval
+    interval,
+    storage
 ) => {
+    // request datetime from ticker from API
+    const symbolTicker = await binanceClient.fetchTicker(symbol);
+    const ping = { time: symbolTicker.datetime };
+
     /** request ticker info & initialize previous price with live price
      *  Note that the info from the last (current) candle may be incomplete
      *  until the candle is closed (until the next candle starts).
@@ -76,37 +99,21 @@ const tick = async (
      *  ]
      */
     const symbolOHLCV = await binanceClient.fetchOHLCV(symbol);
-    symbolOHLCV.pop(); // last candle might be incomplete
-    const initialOHLCV = symbolOHLCV[0];
-    let initializeTick = createTick(
-        initialOHLCV,
-        initialOHLCV[1], // open
-        initialOHLCV[4] // close
-    );
-    coinData.previous = initializeTick;
-    const accountBalance = await binanceClient.fetchBalance(); // request account balance & initialize account information
-    account.startingBalance = accountBalance.free[base];
-    account.theoryBalance = account.startingBalance;
-    account.binanceFee = 1 - accountBalance.info.takerCommission / 10000;
-    let storage = {
-        o: [],
-        h: [],
-        l: [],
-        c: [],
-    };
+    // last candle might be incomplete
+    const lastOHLCV = symbolOHLCV[symbolOHLCV.length - 2];
 
-    // itterate, map and pass a candle every {interval} instances
-    symbolOHLCV.forEach((lastOHLCV) => {
+    if (storage.timestamp[storage.timestamp.length - 1] != lastOHLCV[0]) {
+        storage.timestamp.push(lastOHLCV[0]);
         storage.o.push(lastOHLCV[1]);
         storage.h.push(lastOHLCV[2]);
         storage.l.push(lastOHLCV[3]);
         storage.c.push(lastOHLCV[4]);
 
         if (storage.o.length == interval) {
-            const o = storage.o[storage.o.length - 1];
+            const o = storage.o[0];
             const h = Math.max(...storage.h);
             const l = Math.min(...storage.l);
-            const c = storage.c[0];
+            const c = storage.c[storage.o.length - 1];
             const storageToFactor = [0, o, h, l, c, 0];
             const { open, close } = coinData.previous.heikinAshi;
             let intervalTick = createTick(storageToFactor, open, close);
@@ -115,20 +122,21 @@ const tick = async (
             factorVolatility(account, coinData); // Runs primary algorithm
 
             coinData.previous = coinData.current; // set previous to current each factor
-            storage = {
-                o: [],
-                h: [],
-                l: [],
-                c: [],
-            };
-        }
-    });
+            storage.timestamp = [];
+            storage.o = [];
+            storage.h = [];
+            storage.l = [];
+            storage.c = [];
 
-    console.log(
-        account,
-        symbolOHLCV[0][4],
-        symbolOHLCV[symbolOHLCV.length - 1][4]
-    );
+            console.log(ping);
+            console.log('Balance:', account.theoryBalance);
+            console.log(
+                'Hollow Candle:',
+                coinData.current.heikinAshi.hollowCandle
+            );
+            console.log(symbol, lastOHLCV[4]);
+        }
+    }
 };
 
 // Primary runner
@@ -155,13 +163,31 @@ const run = () => {
         previous: {},
     };
 
+    let storage = {
+        timestamp: [],
+        o: [],
+        h: [],
+        l: [],
+        c: [],
+    };
+
     // Instantiate binance client using the US binance API
     const binanceClient = new ccxt.binanceus({
         apiKey: process.env.API_KEY,
         secret: process.env.API_SECRET,
     });
 
-    tick(coinData, account, binanceClient, symbol, base, interval);
+    initialize(base, account, coinData, binanceClient, symbol);
+    setInterval(
+        tick,
+        5000,
+        coinData,
+        account,
+        binanceClient,
+        symbol,
+        interval,
+        storage
+    );
 };
 
 run();

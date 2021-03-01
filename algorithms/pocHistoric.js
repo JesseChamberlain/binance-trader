@@ -103,10 +103,10 @@ const tick = async (
         storage.c.push(lastOHLCV[4]);
 
         if (storage.o.length == interval) {
-            const o = storage.o[storage.o.length - 1];
+            const o = storage.o[0];
             const h = Math.max(...storage.h);
             const l = Math.min(...storage.l);
-            const c = storage.c[0];
+            const c = storage.c[storage.o.length - 1];
             const storageToFactor = [0, o, h, l, c, 0];
             const { open, close } = coinData.previous.heikinAshi;
             let intervalTick = createTick(storageToFactor, open, close);
