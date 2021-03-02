@@ -1,17 +1,18 @@
 {
     "name": "binance-trader",
-    "version": "0.8.0",
+    "version": "0.9.0",
     "description": "Let's make some money!",
     "main": "index.js",
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
         "poc": "node algorithms/poc --ASSET=$A --BASE=$B --INTERVAL=$I",
-        "btc": "node algorithms/poc --ASSET=BTC --BASE=USDT --INTERVAL=5",
-        "ltc": "node algorithms/poc --ASSET=LTC --BASE=USDT --INTERVAL=5",
-        "doge": "node algorithms/poc --ASSET=DOGE --BASE=USDT --INTERVAL=5",
-        "bnb": "node algorithms/poc --ASSET=BNB --BASE=USDT --INTERVAL=5",
-        "ada": "node algorithms/poc --ASSET=ADA --BASE=USDT --INTERVAL=5",
-        "xrp": "node algorithms/poc --ASSET=XRP --BASE=USDT --INTERVAL=5"
+        "btc": "node algorithms/poc --ASSET=BTC --BASE=USDT --INTERVAL=20",
+        "ltc": "node algorithms/poc --ASSET=LTC --BASE=USDT --INTERVAL=20",
+        "doge": "node algorithms/poc --ASSET=DOGE --BASE=USDT --INTERVAL=20",
+        "bnb": "node algorithms/poc --ASSET=BNB --BASE=USDT --INTERVAL=20",
+        "ada": "node algorithms/poc --ASSET=ADA --BASE=USDT --INTERVAL=20",
+        "xrp": "node algorithms/poc --ASSET=XRP --BASE=USDT --INTERVAL=20",
+        "eth": "node algorithms/poc --ASSET=ETH --BASE=USDT --INTERVAL=20"
     },
     "husky": {
         "hooks": {
