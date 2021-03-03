@@ -1,6 +1,7 @@
 require('dotenv').config();
 const ccxt = require('ccxt');
-var parseArgs = require('minimist');
+const parseArgs = require('minimist');
+const data = require('../helpers/dataCollectors');
 
 /**
  * Runs coin data through logic and itterates account value
@@ -49,8 +50,14 @@ const createHeikinAshiTick = (
         if (candleAvg < shadowAvg) {
             return true; // indicates upward trend
         } else if (candleAvg > shadowAvg) {
-            return false; // indicates downward trend
+            if (prevHollowCandle && Math.abs(candleSpread) < 0.001) {
+                console.log('almost djoi, prevented false flip');
+                return true; // almost djoi, prevent false flip
+            } else {
+                return false; // indicates downward trend
+            }
         } else {
+            console.log('djoi, prevented false flip');
             return prevHollowCandle; // djoi, prevent false flip
         }
     };
@@ -101,7 +108,6 @@ const initialize = async (base, account, coinData, binanceClient, symbol) => {
     account.binanceFee = 1 - accountBalance.info.takerCommission / 10000;
 };
 
-// Interval function
 /**
  * Interval function that runs via setInterval every X milliseconds
  * The function polls for data, sets it to storage, and factors on Y intervals
@@ -111,6 +117,7 @@ const initialize = async (base, account, coinData, binanceClient, symbol) => {
  * @param {string} symbol - market pair symbol, ie: BTC/USDT
  * @param {integer} interval - interval to create candles and factor logic
  * @param {object} storage - Object of arrays to collect OHLC values
+ * @param {string} filePath - path to created JSON file
  */
 const tick = async (
     account,
@@ -118,12 +125,9 @@ const tick = async (
     binanceClient,
     symbol,
     interval,
-    storage
+    storage,
+    filePath
 ) => {
-    // request datetime from fetchTicker endpoint
-    const resTicker = await binanceClient.fetchTicker(symbol);
-    const ping = { time: resTicker.datetime };
-
     // response: array of last 500 OHLCVs [[ t, o, h, l, c, v], ...]
     const resOHLCV = await binanceClient.fetchOHLCV(symbol);
     // last candle might be incomplete
@@ -135,7 +139,6 @@ const tick = async (
         storage.h.push(lastOHLCV[2]);
         storage.l.push(lastOHLCV[3]);
         storage.c.push(lastOHLCV[4]);
-        // console.log(storage);
 
         if (storage.o.length == interval) {
             const o = storage.o[0];
@@ -152,13 +155,15 @@ const tick = async (
             );
             coinData.current = intervalTick;
 
-            factorVolatility(account, coinData); // Runs primary algorithm
+            // Runs primary algorithm
+            factorVolatility(account, coinData);
 
-            coinData.previous = coinData.current; // set previous to current each factor
-            storage.o = [];
-            storage.h = [];
-            storage.l = [];
-            storage.c = [];
+            // request datetime from fetchTicker endpoint
+            const resTicker = await binanceClient.fetchTicker(symbol);
+
+            // write current state to the json file
+            const ping = { time: resTicker.datetime, account, coinData };
+            data.collect(ping, filePath);
 
             const {
                 candleAvg,
@@ -166,12 +171,19 @@ const tick = async (
                 shadowAvg,
                 shadowSpread,
             } = coinData.current;
-            console.log(ping);
+            console.log(resTicker.datetime);
             console.log('Balance:', account.theoryBalance);
             console.log(symbol, lastOHLCV[4]);
             console.log('Hollow Candle:', coinData.current.hollowCandle);
             console.log('Candle Avg, Spread:', candleAvg, candleSpread);
             console.log('Shadow Avg, Spread:', shadowAvg, shadowSpread);
+
+            // reset storage and set current to previous
+            coinData.previous = coinData.current;
+            storage.o = [];
+            storage.h = [];
+            storage.l = [];
+            storage.c = [];
         }
     }
 };
@@ -215,6 +227,9 @@ const run = () => {
         c: [],
     };
 
+    // Create filePath for writing data
+    const filePath = data.createCollectionJSON(coinData);
+
     // Initialize the account and coin data
     initialize(base, account, coinData, binanceClient, symbol);
 
@@ -227,7 +242,8 @@ const run = () => {
         binanceClient,
         symbol,
         interval,
-        storage
+        storage,
+        filePath
     );
 };
 
