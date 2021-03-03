@@ -29,7 +29,7 @@ const tick = async (config, binanceClient) => {
 
 const run = () => {
     const config = {
-        asset: 'LTC', // LiteCoin
+        asset: 'BNB', // LiteCoin
         base: 'USDT', // Tether USD coin
     };
     // Instantiate binance client using the US binance API
