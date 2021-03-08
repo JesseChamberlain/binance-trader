@@ -111,8 +111,8 @@ const initialize = async (coinData, binanceClient, symbol) => {
     );
 
     // buy order
-    // const binanceTicker = await binanceClient.fetchTicker(symbol);
-    // await binanceClient.createOrder(symbol, 'market', 'buy', 3, binanceTicker);
+    const binanceTicker = await binanceClient.fetchTicker(symbol);
+    await binanceClient.createOrder(symbol, 'market', 'buy', 3, binanceTicker);
 };
 
 /**
@@ -149,7 +149,6 @@ const tick = async (
         storage.l.push(lastOHLCV[3]);
         storage.c.push(lastOHLCV[4]);
         storage.v.push(lastOHLCV[5]);
-        console.log(storage);
 
         // once an invterval number of items are in storage, create a H.A. tick
         if (storage.o.length == interval) {
@@ -174,31 +173,31 @@ const tick = async (
             // Runs primary algorithm to decide to buy or sell
             factorVolatility(account, coinData);
 
-            // // order
-            // const binanceTicker = await binanceClient.fetchTicker(symbol);
-            // const { current, previous } = coinData;
+            // order
+            const binanceTicker = await binanceClient.fetchTicker(symbol);
+            const { current, previous } = coinData;
 
-            // // Buy
-            // if (current.hollowCandle && !previous.hollowCandle) {
-            //     await binanceClient.createOrder(
-            //         symbol,
-            //         'market',
-            //         'buy',
-            //         3,
-            //         binanceTicker
-            //     );
-            // }
+            // Buy
+            if (current.hollowCandle && !previous[0].hollowCandle) {
+                await binanceClient.createOrder(
+                    symbol,
+                    'market',
+                    'buy',
+                    3,
+                    binanceTicker
+                );
+            }
 
-            // // Sell
-            // if (!current.hollowCandle && previous.hollowCandle) {
-            //     await binanceClient.createOrder(
-            //         symbol,
-            //         'market',
-            //         'sell',
-            //         3,
-            //         binanceTicker
-            //     );
-            // }
+            // Sell
+            if (!current.hollowCandle && previous[0].hollowCandle) {
+                await binanceClient.createOrder(
+                    symbol,
+                    'market',
+                    'sell',
+                    3,
+                    binanceTicker
+                );
+            }
 
             // request datetime from fetchTicker endpoint
             const resTicker = await binanceClient.fetchTicker(symbol);
@@ -240,7 +239,6 @@ const tick = async (
             storage.c = [];
             storage.v = [];
         }
-        console.log(coinData);
     }
 };
 
