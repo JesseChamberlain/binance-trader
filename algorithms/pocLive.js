@@ -198,7 +198,11 @@ const tick = async (
             const resTicker = await binanceClient.fetchTicker(symbol);
 
             // write current state to the json file
-            const ping = { time: resTicker.datetime, account, coinData };
+            const ping = {
+                time: resTicker.datetime,
+                balance: account.theoryBalance,
+                current: coinData.current,
+            };
             data.collect(ping, filePath);
 
             const {
