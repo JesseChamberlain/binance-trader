@@ -37,14 +37,7 @@ const createHeikinAshiTick = (
     prevClose,
     prevHollowCandle
 ) => {
-    const [
-        lastTime,
-        lastOpen,
-        lastHigh,
-        lastLow,
-        lastClose,
-        lastVol,
-    ] = lastOHLCV;
+    const [lastTime, lastOpen, lastHigh, lastLow, lastClose] = lastOHLCV;
     const open = (prevOpen + prevClose) / 2;
     const close = (lastOpen + lastClose + lastHigh + lastLow) / 4;
     const high = Math.max(open, close, lastHigh);
@@ -75,7 +68,6 @@ const createHeikinAshiTick = (
         close: close,
         high: high,
         low: low,
-        volume: lastVol,
         hollowCandle: isCandleHollow(),
         candleAvg: candleAvg,
         candleSpread: candleSpread,
@@ -108,8 +100,8 @@ const initialize = async (coinData, binanceClient, symbol) => {
     );
 
     // buy order
-    // const binanceTicker = await binanceClient.fetchTicker(symbol);
-    // await binanceClient.createOrder(symbol, 'market', 'buy', 3, binanceTicker);
+    const binanceTicker = await binanceClient.fetchTicker(symbol);
+    await binanceClient.createOrder(symbol, 'market', 'buy', 3, binanceTicker);
 };
 
 /**
@@ -136,7 +128,6 @@ const tick = async (
     const resOHLCV = await binanceClient.fetchOHLCV(symbol);
     // last candle might be incomplete
     const lastOHLCV = resOHLCV[resOHLCV.length - 2];
-    console.log('tick');
 
     if (storage.timestamp != lastOHLCV[0]) {
         storage.timestamp = lastOHLCV[0];
@@ -144,18 +135,13 @@ const tick = async (
         storage.h.push(lastOHLCV[2]);
         storage.l.push(lastOHLCV[3]);
         storage.c.push(lastOHLCV[4]);
-        storage.v.push(lastOHLCV[5]);
-        console.log(storage);
-        console.log(coinData);
 
         if (storage.o.length == interval) {
-            const t = storage.timestamp;
             const o = storage.o[0];
             const h = Math.max(...storage.h);
             const l = Math.min(...storage.l);
             const c = storage.c[storage.o.length - 1];
-            const v = storage.v.reduce((a, b) => a + b, 0);
-            const storageToFactor = [t, o, h, l, c, v];
+            const storageToFactor = [0, o, h, l, c, 0];
             const { open, close, hollowCandle } = coinData.previous;
             let intervalTick = createHeikinAshiTick(
                 storageToFactor,
@@ -168,31 +154,31 @@ const tick = async (
             // Runs primary algorithm
             factorVolatility(account, coinData);
 
-            // // order
-            // const binanceTicker = await binanceClient.fetchTicker(symbol);
-            // const { current, previous } = coinData;
+            // order
+            const binanceTicker = await binanceClient.fetchTicker(symbol);
+            const { current, previous } = coinData;
 
-            // // Buy
-            // if (current.hollowCandle && !previous.hollowCandle) {
-            //     await binanceClient.createOrder(
-            //         symbol,
-            //         'market',
-            //         'buy',
-            //         3,
-            //         binanceTicker
-            //     );
-            // }
+            // Buy
+            if (current.hollowCandle && !previous.hollowCandle) {
+                await binanceClient.createOrder(
+                    symbol,
+                    'market',
+                    'buy',
+                    3,
+                    binanceTicker
+                );
+            }
 
-            // // Sell
-            // if (!current.hollowCandle && previous.hollowCandle) {
-            //     await binanceClient.createOrder(
-            //         symbol,
-            //         'market',
-            //         'sell',
-            //         3,
-            //         binanceTicker
-            //     );
-            // }
+            // Sell
+            if (!current.hollowCandle && previous.hollowCandle) {
+                await binanceClient.createOrder(
+                    symbol,
+                    'market',
+                    'sell',
+                    3,
+                    binanceTicker
+                );
+            }
 
             // request datetime from fetchTicker endpoint
             const resTicker = await binanceClient.fetchTicker(symbol);
@@ -220,7 +206,6 @@ const tick = async (
             storage.h = [];
             storage.l = [];
             storage.c = [];
-            storage.v = [];
         }
     }
 };
@@ -262,7 +247,6 @@ const run = () => {
         h: [],
         l: [],
         c: [],
-        v: [],
     };
 
     // Create filePath for writing data
