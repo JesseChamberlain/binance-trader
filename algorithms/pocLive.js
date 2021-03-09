@@ -94,6 +94,7 @@ const createHeikinAshiTick = (
  * @param {string} symbol - market pair symbol, ie: BTC/USDT
  */
 const initialize = async (coinData, binanceClient, symbol) => {
+    const { previous, currency } = coinData;
     // response: array of last 500 OHLCVs [[ t, o, h, l, c, v], ...]
     const resOHLCV = await binanceClient.fetchOHLCV(symbol);
 
@@ -110,9 +111,21 @@ const initialize = async (coinData, binanceClient, symbol) => {
         )
     );
 
+    // request account balance to set initial amount to buy
+    const accountBalance = await binanceClient.fetchBalance();
+    const baseAvailable = accountBalance.free[currency];
+    const amountToBuy =
+        Math.round(((baseAvailable - 100) / previous[0].price) * 1000) / 1000;
+
     // buy order
     const binanceTicker = await binanceClient.fetchTicker(symbol);
-    await binanceClient.createOrder(symbol, 'market', 'buy', 3, binanceTicker);
+    await binanceClient.createOrder(
+        symbol,
+        'market',
+        'buy',
+        amountToBuy,
+        binanceTicker
+    );
 };
 
 /**
@@ -175,7 +188,16 @@ const tick = async (
 
             // order
             const binanceTicker = await binanceClient.fetchTicker(symbol);
-            const { current, previous } = coinData;
+
+            // request account balance to set buy/sell
+            const { current, previous, coinID, currency } = coinData;
+            const accountBalance = await binanceClient.fetchBalance();
+            const assetAvailable = accountBalance.free[coinID];
+            const baseAvailable = accountBalance.free[currency];
+            const amountToBuy =
+                Math.round(
+                    ((baseAvailable - 100) / previous[0].price) * 10000
+                ) / 10000;
 
             // Buy
             if (current.hollowCandle && !previous[0].hollowCandle) {
@@ -183,7 +205,7 @@ const tick = async (
                     symbol,
                     'market',
                     'buy',
-                    3,
+                    amountToBuy,
                     binanceTicker
                 );
             }
@@ -194,7 +216,7 @@ const tick = async (
                     symbol,
                     'market',
                     'sell',
-                    3,
+                    assetAvailable,
                     binanceTicker
                 );
             }
@@ -257,7 +279,7 @@ const run = () => {
         secret: process.env.API_SECRET,
     });
 
-    // Account object for storing and mutating account values
+    // Account object for storing and mutating account balances to mimic live values
     let account = {
         startingBalance: 100,
         theoryBalance: 100,

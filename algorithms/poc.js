@@ -103,6 +103,7 @@ const initialize = async (base, account, coinData, binanceClient, symbol) => {
 
     // request account balance & initialize account information
     const accountBalance = await binanceClient.fetchBalance();
+    console.log(accountBalance);
     account.startingBalance = accountBalance.free[base];
     account.theoryBalance = account.startingBalance;
     account.binanceFee = 1 - accountBalance.info.takerCommission / 10000;
