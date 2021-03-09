@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.2] - 2021-03-08
+
+### Updated
+
+-   Initialization to use historica data or "interval" amount of tickers
+-   refactored buy/sell to be exponential based on account asset & base amounts
+
 ## [0.11.1] - 2021-03-08
 
 ### Updated
@@ -217,6 +224,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   Working demo and API connections
 
+[0.11.2]: https://github.com/JesseChamberlain/binance-trader/compare/v0.11.1...v0.11.2
 [0.11.1]: https://github.com/JesseChamberlain/binance-trader/compare/v0.11.0...v0.11.1
 [0.11.0]: https://github.com/JesseChamberlain/binance-trader/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/JesseChamberlain/binance-trader/compare/v0.9.0...v0.10.0
