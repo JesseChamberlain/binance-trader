@@ -93,26 +93,43 @@ const createHeikinAshiTick = (
  * @param {Class} binanceClient - ccxt.binance client for API requests
  * @param {string} symbol - market pair symbol, ie: BTC/USDT
  */
-const initialize = async (coinData, binanceClient, symbol) => {
+const initialize = async (
+    coinData,
+    binanceClient,
+    symbol,
+    interval,
+    storage
+) => {
     // response: array of last 500 OHLCVs [[ t, o, h, l, c, v], ...]
     const resOHLCV = await binanceClient.fetchOHLCV(symbol);
 
     // use second to last OHLCV, last OHLCV might be incomplete
-    const initialOHLCV = resOHLCV[resOHLCV.length - 2];
+    // Pre-load storage with (interval - 1) amount of OHLCVs
+    let index = interval;
+    while (index != 1) {
+        const lastOHLCV = resOHLCV[resOHLCV.length - index];
+        storage.timestamp = lastOHLCV[0];
+        storage.o.push(lastOHLCV[1]);
+        storage.h.push(lastOHLCV[2]);
+        storage.l.push(lastOHLCV[3]);
+        storage.c.push(lastOHLCV[4]);
+        storage.v.push(lastOHLCV[5]);
+        --index;
+    }
 
-    // initialize coinData.previous to have first response data
+    console.log('storage', storage);
+
+    // TODO: need to have a tleast the first previous initialized
+    // could possible load all 5 previous to factor initial trending
+    const setOHLCV = resOHLCV[resOHLCV.length - interval];
     coinData.previous.push(
         createHeikinAshiTick(
-            initialOHLCV, // pass the full array for creation
-            initialOHLCV[1], // open, initializes previous.open
-            initialOHLCV[4], // close, initializes previous.close
+            setOHLCV, // pass the full array for creation
+            setOHLCV[1], // open, initializes previous.open
+            setOHLCV[4], // close, initializes previous.close
             true // initialize true for starting hollowCandle state
         )
     );
-
-    // buy order
-    const binanceTicker = await binanceClient.fetchTicker(symbol);
-    await binanceClient.createOrder(symbol, 'market', 'buy', 3, binanceTicker);
 };
 
 /**
@@ -175,7 +192,16 @@ const tick = async (
 
             // order
             const binanceTicker = await binanceClient.fetchTicker(symbol);
-            const { current, previous } = coinData;
+
+            // request account balance to set buy/sell
+            const { current, previous, coinID, currency } = coinData;
+            const accountBalance = await binanceClient.fetchBalance();
+            const assetAvailable = accountBalance.free[coinID];
+            const baseAvailable = accountBalance.free[currency];
+            const amountToBuy =
+                Math.round(
+                    ((baseAvailable - 100) / previous[0].price) * 10000
+                ) / 10000;
 
             // Buy
             if (current.hollowCandle && !previous[0].hollowCandle) {
@@ -183,7 +209,7 @@ const tick = async (
                     symbol,
                     'market',
                     'buy',
-                    3,
+                    amountToBuy,
                     binanceTicker
                 );
             }
@@ -194,7 +220,7 @@ const tick = async (
                     symbol,
                     'market',
                     'sell',
-                    3,
+                    assetAvailable,
                     binanceTicker
                 );
             }
@@ -257,7 +283,7 @@ const run = () => {
         secret: process.env.API_SECRET,
     });
 
-    // Account object for storing and mutating account values
+    // Account object for storing and mutating account balances to mimic live values
     let account = {
         startingBalance: 100,
         theoryBalance: 100,
@@ -286,7 +312,7 @@ const run = () => {
     const filePath = data.createCollectionJSON(coinData);
 
     // Initialize the account and coin data
-    initialize(coinData, binanceClient, symbol);
+    initialize(coinData, binanceClient, symbol, interval, storage);
 
     // Poll every 5000 milliseconds and run tick()
     setInterval(
