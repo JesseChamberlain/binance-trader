@@ -36,7 +36,8 @@ const createHeikinAshiTick = (
     lastOHLCV,
     prevOpen,
     prevClose,
-    prevHollowCandle
+    prevHollowCandle,
+    owned
 ) => {
     const [
         lastTime,
@@ -81,6 +82,7 @@ const createHeikinAshiTick = (
         high: high,
         low: low,
         volume: lastVol,
+        owned: owned,
         hollowCandle: isCandleHollow(),
         candleAvg: candleAvg,
         candleSpread: candleSpread,
@@ -131,7 +133,8 @@ const initialize = async (
             setOHLCV, // pass the full array for creation
             setOHLCV[1], // open, initializes previous.open
             setOHLCV[4], // close, initializes previous.close
-            true // initialize true for starting hollowCandle state
+            true, // initialize true for starting hollowCandle state
+            false // owned always initialized to false
         )
     );
 };
@@ -178,14 +181,15 @@ const tick = async (
             const c = storage.c[storage.o.length - 1];
             const v = storage.v.reduce((a, b) => a + b, 0);
             const storageToFactor = [t, o, h, l, c, v];
-            const { open, close, hollowCandle } = coinData.previous[0];
+            const { open, close, hollowCandle, owned } = coinData.previous[0];
 
             // passes the selective data above to create a H.A. tick
             let intervalTick = createHeikinAshiTick(
                 storageToFactor,
                 open,
                 close,
-                hollowCandle
+                hollowCandle,
+                owned
             );
             coinData.current = intervalTick;
             coinData.current.movingAvg = factorMovingAvg(coinData);
@@ -210,9 +214,14 @@ const tick = async (
             console.log('previous HC:', previous[0].hollowCandle);
 
             // Primary conditionals to decide to buy or sell
-            // Buy
+            // if (a) {buy} else if (b) {sell}
             // TODO: doesn't work when initializing and both are true
-            if (current.hollowCandle && !previous[0].hollowCandle) {
+            // overall there are some edgecases here that won't execute with movingAvg
+            if (
+                current.hollowCandle &&
+                !current.owned &&
+                current.shadowAvg > current.movingAvg
+            ) {
                 console.log('buy!');
                 await binanceClient.createOrder(
                     symbol,
@@ -221,13 +230,12 @@ const tick = async (
                     amountToBuy,
                     binanceTicker
                 );
-            }
-
-            // Sell
-            if (
+                current.owned = true;
+            } else if (
                 !current.hollowCandle &&
-                previous[0].hollowCandle &&
-                assetAvailable > 1
+                current.owned &&
+                assetAvailable > 1 &&
+                current.shadowAvg < current.movingAvg
             ) {
                 console.log('sell!');
                 await binanceClient.createOrder(
@@ -237,6 +245,7 @@ const tick = async (
                     assetAvailable,
                     binanceTicker
                 );
+                current.owned = false;
             }
 
             // request datetime from fetchTicker endpoint
