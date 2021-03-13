@@ -4,27 +4,6 @@ const parseArgs = require('minimist');
 const data = require('../helpers/dataCollectors');
 
 /**
- * Runs coin data through logic and itterates account value
- * @param {object} account - Object of account information
- * @param {object} coinData - Object of current and previous coin data
- */
-const factorVolatility = (account, coinData) => {
-    const { current, previous } = coinData;
-    const latest = previous[0];
-    let prcntChange = current.price / latest.price;
-
-    // Mimics a held asset or sell order, no match equals out of market or buy
-    if (current.hollowCandle && latest.hollowCandle) {
-        // multiply theoryVal by modifier to mimic held value
-        account.theoryBalance = account.theoryBalance * prcntChange;
-    } else if (!current.hollowCandle && latest.hollowCandle) {
-        // multiply theoryVal by modifier & binance fee to mimic market sell
-        account.theoryBalance =
-            account.theoryBalance * prcntChange * account.binanceFee;
-    }
-};
-
-/**
  * Creates a current moving avg from h.a. close (ohlc/4) of current & previous ticks
  * @param {object} coinData - Object of current and previous coin data
  * @return {float} - returns moving average as a float
@@ -160,7 +139,6 @@ const initialize = async (
 /**
  * Interval function that runs via setInterval every X milliseconds
  * The function polls for data, sets it to storage, and factors on Y intervals
- * @param {object} account - Object of account data
  * @param {object} coinData - Object of current and previous coin data
  * @param {Class} binanceClient - ccxt.binance client for API requests
  * @param {string} symbol - market pair symbol, ie: BTC/USDT
@@ -169,7 +147,6 @@ const initialize = async (
  * @param {string} filePath - path to created JSON file
  */
 const tick = async (
-    account,
     coinData,
     binanceClient,
     symbol,
@@ -213,9 +190,6 @@ const tick = async (
             coinData.current = intervalTick;
             coinData.current.movingAvg = factorMovingAvg(coinData);
 
-            // Runs primary algorithm to decide to buy or sell
-            factorVolatility(account, coinData);
-
             // order
             const binanceTicker = await binanceClient.fetchTicker(symbol);
 
@@ -235,6 +209,7 @@ const tick = async (
             console.log('current HC:', current.hollowCandle);
             console.log('previous HC:', previous[0].hollowCandle);
 
+            // Primary conditionals to decide to buy or sell
             // Buy
             // TODO: doesn't work when initializing and both are true
             if (current.hollowCandle && !previous[0].hollowCandle) {
@@ -270,7 +245,6 @@ const tick = async (
             // write current state to the json file
             const ping = {
                 time: resTicker.datetime,
-                balance: account.theoryBalance,
                 current: coinData.current,
             };
             data.collect(ping, filePath);
@@ -284,7 +258,6 @@ const tick = async (
                 movingAvg,
             } = coinData.current;
             console.log(resTicker.datetime);
-            console.log('Balance:', account.theoryBalance);
             console.log(symbol, lastOHLCV[4]);
             console.log('Hollow Candle:', coinData.current.hollowCandle);
             console.log('Candle Avg, Spread:', candleAvg, candleSpread);
@@ -324,13 +297,6 @@ const run = () => {
         secret: process.env.API_SECRET,
     });
 
-    // Account object for storing and mutating account balances to mimic live values
-    let account = {
-        startingBalance: 100,
-        theoryBalance: 100,
-        binanceFee: 0.999,
-    };
-
     // CoinData object for storing and mutating current state of coin price
     let coinData = {
         coinID: asset,
@@ -359,7 +325,6 @@ const run = () => {
     setInterval(
         tick,
         5000,
-        account,
         coinData,
         binanceClient,
         symbol,
