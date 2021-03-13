@@ -8,7 +8,7 @@ const data = require('../helpers/dataCollectors');
  * @param {object} account - Object of account information
  * @param {object} coinData - Object of current and previous coin data
  */
-const factorVolatility = async (account, coinData) => {
+const factorVolatility = (account, coinData) => {
     const { current, previous } = coinData;
     const latest = previous[0];
     let prcntChange = current.price / latest.price;
@@ -22,6 +22,27 @@ const factorVolatility = async (account, coinData) => {
         account.theoryBalance =
             account.theoryBalance * prcntChange * account.binanceFee;
     }
+};
+
+/**
+ * Creates a current moving avg from h.a. close (ohlc/4) of current & previous ticks
+ * @param {object} coinData - Object of current and previous coin data
+ * @return {float} - returns moving average as a float
+ */
+const factorMovingAvg = (coinData) => {
+    const { current, previous } = coinData;
+
+    // create an array of all current and previous closes
+    let closes = [];
+    closes.push(current.close);
+    previous.forEach((tick) => {
+        closes.push(tick.close);
+    });
+
+    // take the average of all closes
+    const movingAvg = closes.reduce((a, b) => a + b, 0) / closes.length;
+
+    return movingAvg;
 };
 
 /**
@@ -54,6 +75,8 @@ const createHeikinAshiTick = (
     const candleSpread = (close - open) / candleAvg;
     const shadowAvg = (high + low) / 2;
     const shadowSpread = (high - low) / shadowAvg;
+
+    // TODO: this should really be a separate function
     const isCandleHollow = () => {
         if (candleAvg < shadowAvg) {
             return true; // indicates upward trend
@@ -69,9 +92,11 @@ const createHeikinAshiTick = (
             return prevHollowCandle; // djoi, prevent false flip
         }
     };
+
     let tick = {
         time: lastTime,
         price: lastClose,
+        movingAvg: 0,
         open: open,
         close: close,
         high: high,
@@ -186,6 +211,7 @@ const tick = async (
                 hollowCandle
             );
             coinData.current = intervalTick;
+            coinData.current.movingAvg = factorMovingAvg(coinData);
 
             // Runs primary algorithm to decide to buy or sell
             factorVolatility(account, coinData);
@@ -200,11 +226,19 @@ const tick = async (
             const baseAvailable = accountBalance.free[currency];
             const amountToBuy =
                 Math.round(
-                    ((baseAvailable - 100) / previous[0].price) * 10000
+                    ((baseAvailable - 15000) / previous[0].price) * 10000
                 ) / 10000;
 
+            console.log('assetAvailable:', assetAvailable);
+            console.log('baseAvailable:', baseAvailable);
+            console.log('amountToBuy:', amountToBuy);
+            console.log('current HC:', current.hollowCandle);
+            console.log('previous HC:', previous[0].hollowCandle);
+
             // Buy
+            // TODO: doesn't work when initializing and both are true
             if (current.hollowCandle && !previous[0].hollowCandle) {
+                console.log('buy!');
                 await binanceClient.createOrder(
                     symbol,
                     'market',
@@ -215,7 +249,12 @@ const tick = async (
             }
 
             // Sell
-            if (!current.hollowCandle && previous[0].hollowCandle) {
+            if (
+                !current.hollowCandle &&
+                previous[0].hollowCandle &&
+                assetAvailable > 1
+            ) {
+                console.log('sell!');
                 await binanceClient.createOrder(
                     symbol,
                     'market',
@@ -242,6 +281,7 @@ const tick = async (
                 candleSpread,
                 shadowAvg,
                 shadowSpread,
+                movingAvg,
             } = coinData.current;
             console.log(resTicker.datetime);
             console.log('Balance:', account.theoryBalance);
@@ -249,6 +289,7 @@ const tick = async (
             console.log('Hollow Candle:', coinData.current.hollowCandle);
             console.log('Candle Avg, Spread:', candleAvg, candleSpread);
             console.log('Shadow Avg, Spread:', shadowAvg, shadowSpread);
+            console.log('Moving Avg:', movingAvg);
 
             // add current tick to begining of coinData.previous array
             coinData.previous.unshift(coinData.current);
