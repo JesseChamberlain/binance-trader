@@ -200,11 +200,18 @@ const tick = async (
             const baseAvailable = accountBalance.free[currency];
             const amountToBuy =
                 Math.round(
-                    ((baseAvailable - 100) / previous[0].price) * 10000
+                    ((baseAvailable - 15000) / previous[0].price) * 10000
                 ) / 10000;
 
+            console.log(assetAvailable);
+            console.log(baseAvailable);
+            console.log(amountToBuy);
+            console.log('current HC:', current.hollowCandle);
+            console.log('previous HC:', previous[0].hollowCandle);
             // Buy
             if (current.hollowCandle && !previous[0].hollowCandle) {
+                // if (!current.hollowCandle && previous[0].hollowCandle) {
+                console.log('buy');
                 await binanceClient.createOrder(
                     symbol,
                     'market',
@@ -215,7 +222,12 @@ const tick = async (
             }
 
             // Sell
-            if (!current.hollowCandle && previous[0].hollowCandle) {
+            if (
+                !current.hollowCandle &&
+                previous[0].hollowCandle &&
+                assetAvailable > 1
+            ) {
+                console.log('sell');
                 await binanceClient.createOrder(
                     symbol,
                     'market',
