@@ -4,24 +4,24 @@ const parseArgs = require('minimist');
 const data = require('../helpers/dataCollectors');
 
 /**
- * Runs coin data through logic and itterates account value
- * @param {object} account - Object of account information
+ * Creates a current moving avg from h.a. close (ohlc/4) of current & previous ticks
  * @param {object} coinData - Object of current and previous coin data
+ * @return {float} - returns moving average as a float
  */
-const factorVolatility = async (account, coinData) => {
+const factorMovingAvg = (coinData) => {
     const { current, previous } = coinData;
-    const latest = previous[0];
-    let prcntChange = current.price / latest.price;
 
-    // Mimics a held asset or sell order, no match equals out of market or buy
-    if (current.hollowCandle && latest.hollowCandle) {
-        // multiply theoryVal by modifier to mimic held value
-        account.theoryBalance = account.theoryBalance * prcntChange;
-    } else if (!current.hollowCandle && latest.hollowCandle) {
-        // multiply theoryVal by modifier & binance fee to mimic market sell
-        account.theoryBalance =
-            account.theoryBalance * prcntChange * account.binanceFee;
-    }
+    // create an array of all current and previous closes
+    let closes = [];
+    closes.push(current.close);
+    previous.forEach((tick) => {
+        closes.push(tick.close);
+    });
+
+    // take the average of all closes
+    const movingAvg = closes.reduce((a, b) => a + b, 0) / closes.length;
+
+    return movingAvg;
 };
 
 /**
@@ -36,7 +36,8 @@ const createHeikinAshiTick = (
     lastOHLCV,
     prevOpen,
     prevClose,
-    prevHollowCandle
+    prevHollowCandle,
+    owned
 ) => {
     const [
         lastTime,
@@ -54,6 +55,8 @@ const createHeikinAshiTick = (
     const candleSpread = (close - open) / candleAvg;
     const shadowAvg = (high + low) / 2;
     const shadowSpread = (high - low) / shadowAvg;
+
+    // TODO: this should really be a separate function
     const isCandleHollow = () => {
         if (candleAvg < shadowAvg) {
             return true; // indicates upward trend
@@ -69,14 +72,17 @@ const createHeikinAshiTick = (
             return prevHollowCandle; // djoi, prevent false flip
         }
     };
+
     let tick = {
         time: lastTime,
         price: lastClose,
+        movingAvg: 0,
         open: open,
         close: close,
         high: high,
         low: low,
         volume: lastVol,
+        owned: owned,
         hollowCandle: isCandleHollow(),
         candleAvg: candleAvg,
         candleSpread: candleSpread,
@@ -117,9 +123,9 @@ const initialize = async (
         --index;
     }
 
-    console.log('storage', storage);
+    console.log('storage initialized');
 
-    // TODO: need to have a tleast the first previous initialized
+    // TODO: need to have at least the first previous initialized
     // could possible load all 5 previous to factor initial trending
     const setOHLCV = resOHLCV[resOHLCV.length - interval];
     coinData.previous.push(
@@ -127,7 +133,8 @@ const initialize = async (
             setOHLCV, // pass the full array for creation
             setOHLCV[1], // open, initializes previous.open
             setOHLCV[4], // close, initializes previous.close
-            true // initialize true for starting hollowCandle state
+            true, // initialize true for starting hollowCandle state
+            false // owned always initialized to false
         )
     );
 };
@@ -135,7 +142,6 @@ const initialize = async (
 /**
  * Interval function that runs via setInterval every X milliseconds
  * The function polls for data, sets it to storage, and factors on Y intervals
- * @param {object} account - Object of account data
  * @param {object} coinData - Object of current and previous coin data
  * @param {Class} binanceClient - ccxt.binance client for API requests
  * @param {string} symbol - market pair symbol, ie: BTC/USDT
@@ -144,7 +150,6 @@ const initialize = async (
  * @param {string} filePath - path to created JSON file
  */
 const tick = async (
-    account,
     coinData,
     binanceClient,
     symbol,
@@ -176,19 +181,18 @@ const tick = async (
             const c = storage.c[storage.o.length - 1];
             const v = storage.v.reduce((a, b) => a + b, 0);
             const storageToFactor = [t, o, h, l, c, v];
-            const { open, close, hollowCandle } = coinData.previous[0];
+            const { open, close, hollowCandle, owned } = coinData.previous[0];
 
             // passes the selective data above to create a H.A. tick
             let intervalTick = createHeikinAshiTick(
                 storageToFactor,
                 open,
                 close,
-                hollowCandle
+                hollowCandle,
+                owned
             );
             coinData.current = intervalTick;
-
-            // Runs primary algorithm to decide to buy or sell
-            factorVolatility(account, coinData);
+            coinData.current.movingAvg = factorMovingAvg(coinData);
 
             // order
             const binanceTicker = await binanceClient.fetchTicker(symbol);
@@ -200,11 +204,16 @@ const tick = async (
             const baseAvailable = accountBalance.free[currency];
             const amountToBuy =
                 Math.round(
-                    ((baseAvailable - 100) / previous[0].price) * 10000
+                    ((baseAvailable - 15000) / previous[0].price) * 10000
                 ) / 10000;
 
-            // Buy
-            if (current.hollowCandle && !previous[0].hollowCandle) {
+            // Primary conditionals to decide to buy or sell
+            // buy
+            if (
+                current.hollowCandle &&
+                !current.owned &&
+                current.shadowAvg > current.movingAvg
+            ) {
                 await binanceClient.createOrder(
                     symbol,
                     'market',
@@ -212,10 +221,17 @@ const tick = async (
                     amountToBuy,
                     binanceTicker
                 );
+                current.owned = true;
+                console.log('Bought asset!');
             }
 
-            // Sell
-            if (!current.hollowCandle && previous[0].hollowCandle) {
+            // sell
+            if (
+                !current.hollowCandle &&
+                current.owned &&
+                assetAvailable > 1 &&
+                current.shadowAvg < current.movingAvg
+            ) {
                 await binanceClient.createOrder(
                     symbol,
                     'market',
@@ -223,6 +239,8 @@ const tick = async (
                     assetAvailable,
                     binanceTicker
                 );
+                current.owned = false;
+                console.log('Sold asset!');
             }
 
             // request datetime from fetchTicker endpoint
@@ -231,24 +249,13 @@ const tick = async (
             // write current state to the json file
             const ping = {
                 time: resTicker.datetime,
-                balance: account.theoryBalance,
                 current: coinData.current,
             };
             data.collect(ping, filePath);
 
             // terminal logging
-            const {
-                candleAvg,
-                candleSpread,
-                shadowAvg,
-                shadowSpread,
-            } = coinData.current;
             console.log(resTicker.datetime);
-            console.log('Balance:', account.theoryBalance);
             console.log(symbol, lastOHLCV[4]);
-            console.log('Hollow Candle:', coinData.current.hollowCandle);
-            console.log('Candle Avg, Spread:', candleAvg, candleSpread);
-            console.log('Shadow Avg, Spread:', shadowAvg, shadowSpread);
 
             // add current tick to begining of coinData.previous array
             coinData.previous.unshift(coinData.current);
@@ -283,13 +290,6 @@ const run = () => {
         secret: process.env.API_SECRET,
     });
 
-    // Account object for storing and mutating account balances to mimic live values
-    let account = {
-        startingBalance: 100,
-        theoryBalance: 100,
-        binanceFee: 0.999,
-    };
-
     // CoinData object for storing and mutating current state of coin price
     let coinData = {
         coinID: asset,
@@ -318,7 +318,6 @@ const run = () => {
     setInterval(
         tick,
         5000,
-        account,
         coinData,
         binanceClient,
         symbol,
