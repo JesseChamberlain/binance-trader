@@ -123,9 +123,9 @@ const initialize = async (
         --index;
     }
 
-    console.log('storage', storage);
+    console.log('storage initialized');
 
-    // TODO: need to have a tleast the first previous initialized
+    // TODO: need to have at least the first previous initialized
     // could possible load all 5 previous to factor initial trending
     const setOHLCV = resOHLCV[resOHLCV.length - interval];
     coinData.previous.push(
@@ -207,22 +207,13 @@ const tick = async (
                     ((baseAvailable - 15000) / previous[0].price) * 10000
                 ) / 10000;
 
-            console.log('assetAvailable:', assetAvailable);
-            console.log('baseAvailable:', baseAvailable);
-            console.log('amountToBuy:', amountToBuy);
-            console.log('current HC:', current.hollowCandle);
-            console.log('previous HC:', previous[0].hollowCandle);
-
             // Primary conditionals to decide to buy or sell
-            // if (a) {buy} else if (b) {sell}
-            // TODO: doesn't work when initializing and both are true
-            // overall there are some edgecases here that won't execute with movingAvg
+            // buy
             if (
                 current.hollowCandle &&
                 !current.owned &&
                 current.shadowAvg > current.movingAvg
             ) {
-                console.log('buy!');
                 await binanceClient.createOrder(
                     symbol,
                     'market',
@@ -231,13 +222,16 @@ const tick = async (
                     binanceTicker
                 );
                 current.owned = true;
-            } else if (
+                console.log('Bought asset!');
+            }
+
+            // sell
+            if (
                 !current.hollowCandle &&
                 current.owned &&
                 assetAvailable > 1 &&
                 current.shadowAvg < current.movingAvg
             ) {
-                console.log('sell!');
                 await binanceClient.createOrder(
                     symbol,
                     'market',
@@ -246,6 +240,7 @@ const tick = async (
                     binanceTicker
                 );
                 current.owned = false;
+                console.log('Sold asset!');
             }
 
             // request datetime from fetchTicker endpoint
@@ -259,19 +254,8 @@ const tick = async (
             data.collect(ping, filePath);
 
             // terminal logging
-            const {
-                candleAvg,
-                candleSpread,
-                shadowAvg,
-                shadowSpread,
-                movingAvg,
-            } = coinData.current;
             console.log(resTicker.datetime);
             console.log(symbol, lastOHLCV[4]);
-            console.log('Hollow Candle:', coinData.current.hollowCandle);
-            console.log('Candle Avg, Spread:', candleAvg, candleSpread);
-            console.log('Shadow Avg, Spread:', shadowAvg, shadowSpread);
-            console.log('Moving Avg:', movingAvg);
 
             // add current tick to begining of coinData.previous array
             coinData.previous.unshift(coinData.current);
