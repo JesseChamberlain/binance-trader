@@ -30,6 +30,7 @@ Built as a command line node.js application.
 -   [eslint-plugin-prettier](https://github.com/prettier/eslint-plugin-prettier)
 -   [prettier](https://github.com/prettier/prettier)
 -   [husky](https://github.com/typicode/husky)
+-   [colors](https://github.com/Marak/colors.js)
 
 ## Setup
 
