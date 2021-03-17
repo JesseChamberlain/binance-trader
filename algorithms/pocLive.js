@@ -1,7 +1,10 @@
+/* eslint-disable node/no-unpublished-require */
 require('dotenv').config();
 const ccxt = require('ccxt');
 const parseArgs = require('minimist');
 const data = require('../helpers/dataCollectors');
+// eslint-disable-next-line no-unused-vars
+const colors = require('colors');
 
 /**
  * Creates a current moving avg from h.a. close (ohlc/4) of current & previous ticks
@@ -61,16 +64,24 @@ const createHeikinAshiTick = (
         if (candleAvg < shadowAvg) {
             return true; // indicates upward trend
         } else if (candleAvg > shadowAvg) {
-            if (prevHollowCandle && Math.abs(candleSpread) < 0.001) {
-                console.log('almost djoi, prevented false flip');
-                return true; // almost djoi, prevent false flip
-            } else {
-                return false; // indicates downward trend
-            }
+            return false; // indicates downward trend
         } else {
-            console.log('djoi, prevented false flip');
+            console.log('djoi, prevented false flip'.brightYellow);
             return prevHollowCandle; // djoi, prevent false flip
         }
+        // if (candleAvg < shadowAvg) {
+        //     return true; // indicates upward trend
+        // } else if (candleAvg > shadowAvg) {
+        //     if (prevHollowCandle && Math.abs(candleSpread) < 0.001) {
+        //         console.log('almost djoi, prevented false flip'.brightYellow);
+        //         return true; // almost djoi, prevent false flip
+        //     } else {
+        //         return false; // indicates downward trend
+        //     }
+        // } else {
+        //     console.log('djoi, prevented false flip'.brightYellow);
+        //     return prevHollowCandle; // djoi, prevent false flip
+        // }
     };
 
     let tick = {
@@ -204,7 +215,7 @@ const tick = async (
             const baseAvailable = accountBalance.free[currency];
             const amountToBuy =
                 Math.round(
-                    ((baseAvailable - 15000) / previous[0].price) * 10000
+                    ((baseAvailable - 1000) / previous[0].price) * 10000
                 ) / 10000;
 
             // Primary conditionals to decide to buy or sell
@@ -212,7 +223,7 @@ const tick = async (
             if (
                 current.hollowCandle &&
                 !current.owned &&
-                current.shadowAvg > current.movingAvg
+                current.candleAvg > current.movingAvg
             ) {
                 await binanceClient.createOrder(
                     symbol,
@@ -222,7 +233,7 @@ const tick = async (
                     binanceTicker
                 );
                 current.owned = true;
-                console.log('Bought asset!');
+                console.log('Bought asset!'.brightGreen);
             }
 
             // sell
@@ -230,7 +241,7 @@ const tick = async (
                 !current.hollowCandle &&
                 current.owned &&
                 assetAvailable > 1 &&
-                current.shadowAvg < current.movingAvg
+                current.candleAvg < current.movingAvg
             ) {
                 await binanceClient.createOrder(
                     symbol,
@@ -240,7 +251,7 @@ const tick = async (
                     binanceTicker
                 );
                 current.owned = false;
-                console.log('Sold asset!');
+                console.log('Sold asset!'.brightRed);
             }
 
             // request datetime from fetchTicker endpoint
@@ -261,7 +272,7 @@ const tick = async (
             coinData.previous.unshift(coinData.current);
 
             // purge oldest tick, but keep 5 tickets for trend data.
-            if (coinData.previous.length > 5) {
+            if (coinData.previous.length > 4) {
                 coinData.previous.pop();
             }
 
