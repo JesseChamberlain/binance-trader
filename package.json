@@ -1,6 +1,6 @@
 {
     "name": "binance-trader",
-    "version": "0.12.0",
+    "version": "0.12.1",
     "description": "Let's make some money!",
     "main": "index.js",
     "scripts": {
@@ -28,6 +28,7 @@
         "minimist": "^1.2.5"
     },
     "devDependencies": {
+        "colors": "^1.4.0",
         "eslint": "^7.20.0",
         "eslint-config-prettier": "^7.2.0",
         "eslint-plugin-node": "^11.1.0",
